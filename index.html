@@ -252,7 +252,7 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
           <div class="f"><label for="w_op">اپراتور<span class="req">*</span></label><select id="w_op" data-req="اپراتور دوخت" data-role="دوخت"></select></div>
           <div class="f"><label for="w_code">محصول<span class="req">*</span></label><select id="w_code" data-req="محصول"></select></div>
           <div class="f"><label for="w_lot">لات نامبر<span class="req">*</span></label><input id="w_lot" class="ltr" placeholder="IS261104" data-req="لات نامبر" data-kind="lot"><input id="w_date" type="hidden" data-kind="date"></div>
-          <div class="f"><label for="w_serial">سریال<span class="req">*</span></label><input id="w_serial" class="ltr" placeholder="001" data-req="سریال"></div>
+          <div class="f"><label for="w_serial">سریال <span class="hint">(اختیاری)</span></label><input id="w_serial" class="ltr" placeholder="اختیاری"></div>
           <div class="f"><label for="w_packs">تعداد<span class="req">*</span></label><input id="w_packs" type="number" min="1" placeholder="مثلاً 10000" data-req="تعداد" data-kind="int"><small class="hint numhint" data-for="w_packs"></small></div>
           <div class="f"><span class="lab">نتیجه<span class="req">*</span></span>
             <div class="toggle" id="w_res" data-label="نتیجه" role="group" aria-label="نتیجه‌ی دوخت"><button type="button" data-v="تایید">تایید</button><button type="button" data-v="ریجکت">ریجکت</button></div></div>
@@ -397,7 +397,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.19-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.20-a";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -530,12 +530,12 @@ const H={
     const r={id:DB.nextId++,t:nowJ(),shift:d.shift,code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),packs:parseInt(d.packs,10),by:u.name};DB.carton.push(r);
     logEv(u.name,"ثبت کارتن‌گذاری",`لات ${r.lot} · ${r.packs} عدد · شیفت ${r.shift}`);save();return ok({rec:r});});},
   // دوخت: اپراتور، محصول، لات، سریال و نتیجه (تایید/ریجکت)
-  addSew(d){return needSt(["دوخت"],u=>{const e=check(d,[["shift","شیفت"],["code","محصول"],["lot","لات نامبر"],["serial","سریال"],["op","اپراتور دوخت"],["packs","تعداد","int"],["result","نتیجه"]]);if(e)return e;
+  addSew(d){return needSt(["دوخت"],u=>{const e=check(d,[["shift","شیفت"],["code","محصول"],["lot","لات نامبر"],["op","اپراتور دوخت"],["packs","تعداد","int"],["result","نتیجه"]]);if(e)return e;
     if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه (تایید یا ریجکت) را انتخاب کنید.");if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");
     const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");if(!isUser(d.op,"دوخت"))return err("اپراتور دوخت در فهرست نیست.");
-    const lot=normLot(d.lot),serial=String(d.serial).trim().toUpperCase();{const lim=repOf(p.code)||1,n=DB.sew.filter(r=>r.lot===lot&&serKey(r.serial)===serKey(serial)).length;if(n>=lim)return err(lim===1?`سریال ${serial} برای لات ${lot} در دوخت قبلاً ثبت شده است.`:`سریال ${serial} لات ${lot} در دوخت ${n} بار ثبت شده؛ برای ${p.name} حداکثر ${lim} بار مجاز است.`);}
+    const lot=normLot(d.lot),serial=String(d.serial||"").trim().toUpperCase();if(serial){const lim=repOf(p.code)||1,n=DB.sew.filter(r=>r.lot===lot&&serKey(r.serial)===serKey(serial)).length;if(n>=lim)return err(lim===1?`سریال ${serial} برای لات ${lot} در دوخت قبلاً ثبت شده است.`:`سریال ${serial} لات ${lot} در دوخت ${n} بار ثبت شده؛ برای ${p.name} حداکثر ${lim} بار مجاز است.`);}
     const r={id:DB.nextId++,t:nowJ(),shift:d.shift,code:p.code,product:p.name,date:normDate(d.date)||prodDay(),lot,serial,op:d.op,result:d.result,reason:String(d.reason||"").trim(),packs:parseInt(d.packs,10),by:u.name};
-    DB.sew.push(r);logEv(u.name,"ثبت دوخت",`لات ${r.lot} · سریال ${r.serial} · ${r.packs} عدد · ${r.result}${r.reason?" ("+r.reason+")":""} · اپراتور: ${r.op} · شیفت ${r.shift}`);save();return ok({rec:r,nextSerial:lotInfo(lot).sewNext});});},
+    DB.sew.push(r);logEv(u.name,"ثبت دوخت",`لات ${r.lot}${r.serial?" · سریال "+r.serial:""} · ${r.packs} عدد · ${r.result}${r.reason?" ("+r.reason+")":""} · اپراتور: ${r.op} · شیفت ${r.shift}`);save();return ok({rec:r,nextSerial:lotInfo(lot).sewNext});});},
   recent(q){return needP("entry",u=>{const d=normDate((q||{}).date)||prodDay();const rows=[].concat(...RK.map(k=>DB[k].map(r=>Object.assign({kind:RKN[k]},r)))).filter(r=>workDay(r.t)===d&&mine(u,r)).sort((a,b)=>a.t<b.t?1:-1);return ok({rows,date:d,weekday:weekday(d),all:isMgr(u),prev:addDays(d,-1),next:addDays(d,1)});});},
   remove(d){return needP("entry",u=>{const KN=RKN,KOF=RKOF;for(const k of(KOF[d.kind]?[KOF[d.kind]]:RK)){const i=DB[k].findIndex(r=>r.id===+d.id);if(i>=0){if(DB[k].filter(r=>r.id===+d.id).length>1)return err("شناسه‌ی این ثبت تکراری است؛ حذف انجام نشد. به مدیر سامانه خبر دهید.");const r=DB[k][i];if(!mine(u,r))return err("فقط ثبت‌های خودتان را می‌توانید حذف کنید.",403);DB[k].splice(i,1);logEv(u.name,"حذف ثبت",`${KN[k]} · لات ${r.lot} · ${r.serial?"سریال "+r.serial:(r.packs||0)+" بسته"}${r.result?" · "+r.result:""} · ثبت اصلی: ${r.by} در ${r.t}`);save();return ok();}}return err("ثبت پیدا نشد.");});},
   // فرم آفلاین: فهرست محصولات، افراد و شیفت‌ها داخل یک فایل HTML قرار می‌گیرد که بدون اینترنت باز می‌شود
@@ -725,7 +725,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.19-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.20-a";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -847,7 +847,6 @@ async function autofill(k){const lot=$("#"+k+"_lot").value.trim();if(lot.length<
   const put=(id,v)=>{const el=$(id);if(el&&v&&!String(el.value).trim()){if(el.tagName==="SELECT"&&![...el.options].some(o=>o.value===v))return;el.value=v;el.classList.add("auto");}};
   put("#"+k+"_code",i.code);put("#"+k+"_date",i.date);put("#"+k+"_asm",i.asm);
   if(k==="c"){put("#c_test",i.test);put("#c_serial",i.nextSerial);}
-  if(k==="w")put("#w_serial",i.sewNext);
   if(k==="t"){const left=i.asmPacks-i.okPacks-i.rejPacks;if(left>0)put("#t_packs",String(left));}
   setPer(k);
   validate(k);}
@@ -866,14 +865,14 @@ async function submit(k){if(validate(k,true).length)return;const f=FORMS[k];cons
   fields(k).forEach(el=>d[el.id.slice(2)]=el.value.trim());if(!d.date&&$("#"+k+"_date"))d.date=$("#"+k+"_date").value;if(hasRes(k)){d.result=$("#"+k+"_res").dataset.v;d.reason=$("#"+k+"_reason").value;}
   if(editing){d.id=editing;d.kind=EDITK[k];if(ME.role==="مدیر"&&$("#"+k+"_tEdit"))d.t=$("#"+k+"_tEdit").value.trim();}$("#"+k+"_go").disabled=true;const r=await api(editing?"updateRec":f.fn,d);
   if(!r.ok){msg("#"+k+"_msg",esc(r.error),"bad");validate(k);return;}
-  msg("#"+k+"_msg",`${editing?"ویرایش ذخیره شد":f.ok}: لات <span class="mono">${esc(r.rec.lot)}</span> · ${k==="c"?`سریال <span class="mono">${esc(r.rec.serial)}</span>`:k==="w"?`سریال <span class="mono">${esc(r.rec.serial)}</span> · ${fa(r.rec.packs)} عدد`:k==="j"||k==="x"?fa(r.rec.packs)+" عدد":fa(r.rec.packs)+" بسته"}${r.warn?`<br><span style="color:var(--warn)">${esc(r.warn)}</span>`:""}`,r.warn?"warn":"ok");
+  msg("#"+k+"_msg",`${editing?"ویرایش ذخیره شد":f.ok}: لات <span class="mono">${esc(r.rec.lot)}</span> · ${k==="c"?`سریال <span class="mono">${esc(r.rec.serial)}</span>`:k==="w"?`${r.rec.serial?`سریال <span class="mono">${esc(r.rec.serial)}</span> · `:""}${fa(r.rec.packs)} عدد`:k==="j"||k==="x"?fa(r.rec.packs)+" عدد":fa(r.rec.packs)+" بسته"}${r.warn?`<br><span style="color:var(--warn)">${esc(r.warn)}</span>`:""}`,r.warn?"warn":"ok");
   if(editing){endEdit(k,true);const was=REC.date;await loadRecent(r.day||undefined);
     // ثبت ویرایش‌شده را در آرشیو نشان بده (اگر با زمان جدید به روز کاری دیگری رفته، همان روز باز می‌شود)
     const show=()=>{const b=$(`#recent [data-edit="${r.rec.id}"][data-kind="${EDITK[k]||""}"]`)||$(`#recent [data-edit="${r.rec.id}"]`);if(!b)return false;const tr=b.closest("tr");tr.classList.add("flash");tr.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>tr.classList.remove("flash"),4000);return true;};
     REC.view="all";REC.n=Math.max(30,RECS.length);renderRecent();if(!show()){REC.f={};REC.q="";$("#recQ").value="";REC.kind="همه";REC.head="";renderRecent();show();}
     if(r.day&&was&&r.day!==was)msg("#"+k+"_msg",$("#"+k+"_msg").innerHTML+`<br>با زمان جدید، این ثبت مال روز کاری <b class="mono">${esc(r.day)}</b> است و آرشیو همان روز باز شد.`,"ok");return;}
   // پیچش: هر بسته یک ثبت است؛ لات و افراد می‌مانند و فقط سریال بعدی و نتیجه‌ی QC تازه می‌شود
-  if(k==="w"){const s=$("#w_serial");s.value=r.nextSerial||"";s.classList.add("auto");delete $("#w_res").dataset.v;$$("#w_res button").forEach(x=>x.className="");$("#w_reasonBox").hidden=true;$("#w_reason").value="";validate(k);loadRecent();return;}
+  if(k==="w"){$("#w_serial").value="";delete $("#w_res").dataset.v;$$("#w_res button").forEach(x=>x.className="");$("#w_reasonBox").hidden=true;$("#w_reason").value="";validate(k);loadRecent();return;}
   if(k==="j"||k==="x"){$("#"+k+"_packs").value="";if(k==="j"){delete $("#j_res").dataset.v;$$("#j_res button").forEach(x=>x.className="");$("#j_reasonBox").hidden=true;$("#j_reason").value="";}validate(k);loadRecent();return;}   // محصول، تاریخ و لات می‌مانند تا ثبت بعدی راحت باشد
   if(k==="c"){const s=$("#c_serial");s.value=r.nextSerial||"";s.classList.add("auto");delete $("#c_res").dataset.v;$$("#c_res button").forEach(x=>x.className="");$("#c_reasonBox").hidden=true;$("#c_reason").value="";validate(k);loadRecent();return;}
   // پاک کردن فرم برای ثبت بعدی؛ تاریخ و افراد ثابت می‌مانند تا ثبت پشت‌سرهم سریع باشد
