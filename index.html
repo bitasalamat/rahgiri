@@ -703,8 +703,11 @@ const H={
     return ok({warn:noSt.length?`${noSt.length} اپراتور هنوز ایستگاهی ندارند؛ در فرم‌ها زیر «سایر اپراتورها» قابل انتخاب‌اند، ولی تا تیک ایستگاه و تارگتشان را نزنید، تارگت و انحراف ندارند.`:""});});}
 };
 // هر ثبت آفلاین یک شناسه‌ی یکتا می‌گیرد تا در آپلود دوباره، تکراری ثبت نشود
-["addAsm","addTest","addCoil"].forEach(fn=>{const f=H[fn];H[fn]=d=>{const r=f(d);if(r.ok&&r.rec&&!r.rec.oid){r.rec.oid="OF-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);save();}return r;};});
-H.exportOffline=()=>ok({file:{kind:"rahgiri-offline",v:1,by:BAKED.me,username:BAKED.username,formAt:BAKED.at,at:nowJ(),asm:DB.asm,test:DB.test,coil:DB.coil,jet:DB.jet||[],sew:DB.sew||[],carton:DB.carton||[]}});
+const newOid=()=>"OF-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
+["addAsm","addTest","addCoil","addJet","addSew","addCarton"].forEach(fn=>{const f=H[fn];if(!f)return;H[fn]=d=>{const r=f(d);if(r.ok&&r.rec&&!r.rec.oid){r.rec.oid=newOid();save();}return r;};});
+// ثبت‌های قدیمی‌ای که شناسه نگرفته بودند، قبل از ارسال شناسه می‌گیرند
+const fixOids=()=>{let ch=0;["asm","test","coil","jet","sew","carton"].forEach(k=>(DB[k]||[]).forEach(r=>{if(!r.oid){r.oid=newOid();ch++;}}));if(ch)save();};
+H.exportOffline=()=>(fixOids(),ok({file:{kind:"rahgiri-offline",v:1,by:BAKED.me,username:BAKED.username,formAt:BAKED.at,at:nowJ(),asm:DB.asm,test:DB.test,coil:DB.coil,jet:DB.jet||[],sew:DB.sew||[],carton:DB.carton||[]}}));
 H.clearOffline=()=>{DB.asm=[];DB.test=[];DB.coil=[];DB.jet=[];DB.sew=[];DB.carton=[];DB.events=[];save();return ok();};
 H.removeSynced=d=>{const S=new Set(d.oids||[]);["asm","test","coil","jet","sew","carton"].forEach(k=>{DB[k]=(DB[k]||[]).filter(r=>!S.has(r.oid));});save();return ok();};
 H.refreshData=d=>{const x=d.data;Object.assign(DB,{products:x.products,users:x.users,shifts:x.shifts,bakedAt:x.at,session:x.me});save();return ok();};
