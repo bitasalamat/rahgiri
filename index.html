@@ -1208,8 +1208,9 @@ async function exportXlsx(){const b=$("#xlsx"),txt=b.textContent;b.disabled=true
 /* ---------- اپ گوشی: اتصال و ارسال ---------- */
 async function pPost(body){const r=await fetch(PWA_SERVER(),{method:"POST",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
 function PWA_SERVER(){return(JSON.parse(localStorage.getItem("rahgiri-pwa")||"{}").server)||$("#pSrv").value.trim();}
-function pSave(o){const cur=JSON.parse(localStorage.getItem("rahgiri-pwa")||"{}");localStorage.setItem("rahgiri-pwa",JSON.stringify(Object.assign(cur,o)));}
-(()=>{try{const q=new URLSearchParams(location.search).get("s");if(q)$("#pSrv").value=q;}catch(e){}})();
+function pSave(o){const cur=JSON.parse(localStorage.getItem("rahgiri-pwa")||"{}");try{localStorage.setItem("rahgiri-srv",srv);}catch(e){}localStorage.setItem("rahgiri-pwa",JSON.stringify(Object.assign(cur,o)));}
+const DEF_SRV="https://script.google.com/macros/s/AKfycbzKtLJldS2LEIsuIh0cUB2KYGGkxoy4NCjaazehgHK0b-EGqU8kB1bH6WB4abHiR_EK/exec";
+(()=>{let v=DEF_SRV;try{const sv=localStorage.getItem("rahgiri-srv");if(sv)v=sv;}catch(e){}try{const q=new URLSearchParams(location.search).get("s");if(q)v=q;}catch(e){}$("#pSrv").value=v;})();
 $("#lGo").onclick=async()=>{const srv=$("#pSrv").value.trim(),b=$("#lGo");
   if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(srv))return msg("#lMsg","لینک سامانه را درست وارد کنید؛ با https://script.google.com شروع می‌شود و آخرش ‎/exec است.","bad");
   b.disabled=true;b.textContent="در حال اتصال…";

@@ -1,5 +1,5 @@
 // اپ گوشی: همه‌ی فایل‌ها روی گوشی ذخیره می‌شوند تا بدون اینترنت باز شود
-const CACHE="rahgiri-pwa-v1";
+const CACHE="rahgiri-pwa-v2";
 const FILES=["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./fonts/Vazirmatn-Regular.ttf","./fonts/Vazirmatn-Bold.ttf"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
