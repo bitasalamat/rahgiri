@@ -212,7 +212,7 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
           <div class="f"><label for="c_code">محصول<span class="req">*</span></label><select id="c_code" data-req="محصول"></select></div>
           <div class="f"><label for="c_date">تاریخ تولید<span class="req">*</span></label><input id="c_date" class="ltr" placeholder="1405/08/13" data-req="تاریخ تولید" data-kind="date"></div>
           <div class="f"><label for="c_lot">لات نامبر<span class="req">*</span></label><input id="c_lot" class="ltr" placeholder="SS261104" data-req="لات نامبر" data-kind="lot"></div>
-          <div class="f"><label for="c_serial">سریال تولید<span class="req">*</span></label><input id="c_serial" class="ltr" placeholder="001" data-req="سریال تولید"></div>
+          <div class="f"><label for="c_serial">سریال تولید<span class="req">*</span></label><input id="c_serial" class="ltr" placeholder="مثلاً 001" data-req="سریال تولید"></div>
           <div class="f"><label for="c_asm">مونتاژکار<span class="req">*</span></label><select id="c_asm" data-req="مونتاژکار" data-role="مونتاژ"></select></div>
           <div class="f"><label for="c_test">تست‌کار<span class="req">*</span></label><select id="c_test" data-req="تست‌کار" data-role="تست"></select></div>
           <div class="f"><label for="c_coil">پیچش‌کار<span class="req">*</span></label><select id="c_coil" data-self="1" data-req="پیچش‌کار" data-role="پیچش"></select></div>
@@ -397,7 +397,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.20-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.21-a";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -725,7 +725,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.20-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.21-a";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -846,8 +846,7 @@ Object.keys(FORMS).filter(hasRes).forEach(k=>{$("#"+k+"_res").onclick=e=>{const 
 async function autofill(k){const lot=$("#"+k+"_lot").value.trim();if(lot.length<4)return;const r=await api("lotInfo",{lot});if(!r.ok||!r.info.found)return;const i=r.info;
   const put=(id,v)=>{const el=$(id);if(el&&v&&!String(el.value).trim()){if(el.tagName==="SELECT"&&![...el.options].some(o=>o.value===v))return;el.value=v;el.classList.add("auto");}};
   put("#"+k+"_code",i.code);put("#"+k+"_date",i.date);put("#"+k+"_asm",i.asm);
-  if(k==="c"){put("#c_test",i.test);put("#c_serial",i.nextSerial);}
-  if(k==="t"){const left=i.asmPacks-i.okPacks-i.rejPacks;if(left>0)put("#t_packs",String(left));}
+  if(k==="c"){put("#c_test",i.test);}   // سریال را آمارگر خودش می‌زند
   setPer(k);
   validate(k);}
 ["t","c","j","w","x"].forEach(k=>{let tm;$("#"+k+"_lot").addEventListener("input",()=>{clearTimeout(tm);tm=setTimeout(()=>autofill(k),350);});});
@@ -874,7 +873,7 @@ async function submit(k){if(validate(k,true).length)return;const f=FORMS[k];cons
   // پیچش: هر بسته یک ثبت است؛ لات و افراد می‌مانند و فقط سریال بعدی و نتیجه‌ی QC تازه می‌شود
   if(k==="w"){$("#w_serial").value="";delete $("#w_res").dataset.v;$$("#w_res button").forEach(x=>x.className="");$("#w_reasonBox").hidden=true;$("#w_reason").value="";validate(k);loadRecent();return;}
   if(k==="j"||k==="x"){$("#"+k+"_packs").value="";if(k==="j"){delete $("#j_res").dataset.v;$$("#j_res button").forEach(x=>x.className="");$("#j_reasonBox").hidden=true;$("#j_reason").value="";}validate(k);loadRecent();return;}   // محصول، تاریخ و لات می‌مانند تا ثبت بعدی راحت باشد
-  if(k==="c"){const s=$("#c_serial");s.value=r.nextSerial||"";s.classList.add("auto");delete $("#c_res").dataset.v;$$("#c_res button").forEach(x=>x.className="");$("#c_reasonBox").hidden=true;$("#c_reason").value="";validate(k);loadRecent();return;}
+  if(k==="c"){const s=$("#c_serial");s.value="";s.classList.remove("auto");delete $("#c_res").dataset.v;$$("#c_res button").forEach(x=>x.className="");$("#c_reasonBox").hidden=true;$("#c_reason").value="";validate(k);loadRecent();return;}
   // پاک کردن فرم برای ثبت بعدی؛ تاریخ و افراد ثابت می‌مانند تا ثبت پشت‌سرهم سریع باشد
   fields(k).forEach(el=>{if(el.dataset.kind==="date"||el.dataset.role||el.dataset.shift)return;el.value="";el.classList.remove("auto","invalid");delete el.dataset.touched;delete el.dataset.base;});
   setPer(k);if((k==="t"||k==="c"||k==="a")){delete $("#"+k+"_res").dataset.v;$$("#"+k+"_res button").forEach(x=>x.className="");$("#"+k+"_reasonBox").hidden=true;$("#"+k+"_reason").value="";}
