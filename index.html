@@ -133,6 +133,10 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
 .kpi .kp{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)}.kpi .kp .bar{flex:1;width:auto}
 @media (max-width:600px){.grid{grid-template-columns:1fr 1fr}}
 .hallhd{margin:18px 0 6px;font-size:15px;color:var(--acc,#1f5fae);border-bottom:1px solid var(--line);padding-bottom:4px}
+.balwait.clk{cursor:pointer;transition:transform .1s}.balwait.clk:hover{transform:translateY(-2px);box-shadow:0 2px 8px rgba(0,0,0,.08)}.balwait.sel{outline:2px solid var(--acc);outline-offset:1px}
+.baldet:empty{display:none}.dfbox{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg2,#f7f9fc)}.dfhead{line-height:1.9}
+.dfgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:10px}.dfgrp h4,.dfbox h4{margin:10px 0 4px;font-size:13.5px}
+tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{background:#fdecec}
 </style>
 </head>
 <body>
@@ -288,11 +292,18 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
 
     <!-- رهگیری -->
     <section id="v-trace" class="view" hidden>
-      <div class="hallseg" id="trSeg" role="tablist" aria-label="نوع رهگیری"><button data-tr="t" aria-selected="true">رهگیری لات و سریال</button><button data-tr="b" aria-selected="false">موجودی بین مراحل</button></div>
+      <div class="hallseg" id="trSeg" role="tablist" aria-label="نوع رهگیری"><button data-tr="t" aria-selected="true">رهگیری لات و سریال</button><button data-tr="b" aria-selected="false">موجودی بین مراحل</button><button data-tr="m" aria-selected="false">مغایرت‌های ثبت تولید</button></div>
       <div class="card" id="trBal" hidden>
         <h2>موجودی بین مراحل</h2><p class="sub">لات نامبر (یا بخشی از آن) را بزنید تا ببینید از هر لات در هر مرحله چقدر کار شده و بین دو مرحله چقدر مانده است. مانده = تاییدشده‌ی مرحله‌ی قبل منهای همه‌ی ثبت‌های مرحله‌ی بعد. همه‌ی اعداد به «عدد» است (بسته × تعداد در هر بسته؛ در سالن ۳ همان «تعداد» ثبت‌شده).</p>
         <div class="row"><div class="f" style="width:240px"><label for="bq">لات نامبر</label><input id="bq" class="ltr" placeholder="IS261107"></div><button class="btn p" id="bGo">نمایش موجودی</button></div>
+        <p class="hint" style="margin:8px 0 0">روی هر خانه‌ی «مانده» یا «بیشتر ثبت شده» بزنید تا ببینید این عدد از کدام ثبت‌ها و کدام نفرها آمده است.</p>
         <div id="bOut"></div>
+      </div>
+      <div class="card" id="trMis" hidden>
+        <h2>مغایرت‌های ثبت تولید</h2><p class="sub">لات‌هایی که در این بازه ثبت داشته‌اند و در یک مرحله <b>بیشتر از تاییدشده‌ی مرحله‌ی قبل</b> ثبت شده‌اند. روی «جزئیات» بزنید تا ثبت‌های دو مرحله، ثبت‌کننده‌ی هر کدام، تفکیک به نفر و «تعداد در هر بسته»، و ثبت‌های مشکوک (تکراری یا با تعداد در هر بسته‌ی متفاوت) را ببینید.</p>
+        <div class="row"><div class="f"><label for="mFrom">از روز کاری</label><input id="mFrom" class="ltr" style="width:130px"></div><div class="f"><label for="mTo">تا</label><input id="mTo" class="ltr" style="width:130px"></div>
+          <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mAll" style="width:auto"> مانده‌های عادی (کار در جریان) را هم نشان بده</label><button class="btn p" id="mGo">نمایش مغایرت‌ها</button></div>
+        <div id="mOut"></div>
       </div>
       <div class="card" id="trTrace">
         <h2>رهگیری لات</h2><p class="sub">لات نامبر کامل یا بخشی از آن را بزنید تا همه‌ی ثبت‌های مونتاژ، تست و QC و پیچش آن را ببینید.</p>
@@ -398,7 +409,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.21-c";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.21-d";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -485,6 +496,12 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
     add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});return m;}
 // تارگت هر نفر به تفکیک ایستگاه و محصول: تارگت همان محصول، وگرنه تارگت «همه‌ی محصولات» ایستگاه
 const PT=d=>(DB.pTargets||{})[d]||{},PL=d=>(DB.plans||{})[d]||{};
+// مراحل موجودی لات (سالن ۲ ← سالن ۳) و مقدار هر ثبت به «عدد»
+const BST=[["asm","مونتاژ"],["test","تست و QC"],["coil","پیچش"],["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]],BKN=Object.fromEntries(BST);
+const bpcs=(k,r)=>["jet","sew","carton"].includes(k)?(+r.packs||0):(+r.packs||0)*perOf(r);
+const bperson=(k,r)=>({asm:r.asm,test:r.test,coil:r.coil,jet:r.op,sew:r.op,carton:""})[k]||"";
+function balSteps(l){const steps=BST.map(([k,name])=>{const R=DB[k].filter(r=>r.lot===l);const rej=R.filter(r=>r.result==="ریجکت").reduce((s,r)=>s+bpcs(k,r),0),all=R.reduce((s,r)=>s+bpcs(k,r),0);
+  return{k,name,n:R.length,all,ok:all-rej,rej,last:R.reduce((m,r)=>!m||r.t>m?r.t:m,"")};});steps.forEach((s0,i)=>{if(i)s0.wait=steps[i-1].ok-s0.all;});return steps;}
 // عملکرد سالن ۳ هر «ایستگاه|محصول|شیفت» در روز کاری (تعداد تاییدشده، به عدد)
 const H3K=[["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]];
 function h3Act(day,into){const A=into||{};H3K.forEach(([k,st])=>(DB[k]||[]).forEach(r=>{if(workDay(r.t)!==day||!r.shift||r.result==="ریجکت")return;const key=st+"|"+r.code+"|"+r.shift;const o=A[key]||(A[key]={packs:0,pcs:0});const n=+r.packs||0;o.packs+=n;o.pcs+=n;}));return A;}
@@ -576,14 +593,38 @@ const H={
       logEv(u.name,"ویرایش ثبت",`${KN[k]} · لات ${nr.lot} · ثبت اصلی: ${old.by} در ${old.t} · ${ch.length?ch.join(" | "):"بدون تغییر"}`);save();return ok({rec:nr,day:workDay(nr.t),warn:res.warn,nextSerial:res.nextSerial});}
     return err("ثبت پیدا نشد.");});},
   // موجودی بین مراحل هر لات (۶ مرحله): انجام‌شده، ریجکت، و مانده‌ی بین هر دو مرحله — به عدد
+  // مغایرت بین دو مرحله‌ی یک لات: همه‌ی ثبت‌های دو مرحله + تفکیک به نفر و «تعداد در هر بسته» + ثبت‌های مشکوک
+  lotDiff(d){return needP("trace",u=>{const l=normLot(d.lot),i=parseInt(d.i,10);if(!l||!(i>=1&&i<BST.length))return err("لات یا مرحله معتبر نیست.");
+    const [ka,na]=BST[i-1],[kb,nb]=BST[i];const A=DB[ka].filter(r=>r.lot===l),B=DB[kb].filter(r=>r.lot===l);if(!A.length&&!B.length)return err(`لات ${l} پیدا نشد.`);
+    const p=prod((lotInfo(l)||{}).code)||prod((A[0]||B[0]).code)||{};const pk=+p.pack||0;const lotPer=+((DB.asm.find(a=>a.lot===l)||{}).per)||0;
+    const mins=t=>{const m=String(t).match(/^(\S+)\s+(\d+):(\d+)/);return m?[m[1],+m[2]*60+ +m[3]]:[t,0];};
+    const mk=(k,r)=>{const H3=["jet","sew","carton"].includes(k);const per=H3?1:perOf(r),pcs=bpcs(k,r);const fl=[];
+      if(!H3&&pk&&per!==pk)fl.push(`تعداد در هر بسته ${per} است (پیش‌فرض محصول ${pk})`);
+      if(!H3&&lotPer&&k!=="asm"&&per!==lotPer&&per!==pk)fl.push(`تعداد در هر بسته با مونتاژ همین لات (${lotPer}) فرق دارد`);
+      if(r.editedAt)fl.push(`ویرایش‌شده توسط ${r.editedBy} در ${r.editedAt}`);
+      return{kind:BKN[k],k,id:r.id,t:r.t,shift:r.shift||"",person:bperson(k,r),asm:r.asm||"",test:r.test||"",serial:r.serial||"",packs:+r.packs||0,per:H3?"":per,pcs,result:r.result||"",reason:r.reason||"",by:r.by||"",fl};};
+    const RA=A.map(r=>mk(ka,r)),RB=B.map(r=>mk(kb,r));
+    // ثبت‌های تکراری احتمالی: همان مرحله، همان فرد، همان تعداد، با فاصله‌ی کمتر از ۱۰ دقیقه
+    [RA,RB].forEach(R=>R.forEach((x,j)=>R.forEach((y,k2)=>{if(k2<=j)return;const[da,ma]=mins(x.t),[db,mb]=mins(y.t);
+      if(da===db&&Math.abs(ma-mb)<=10&&x.person===y.person&&x.packs===y.packs&&x.per===y.per&&(x.serial||"")===(y.serial||"")){const m=`احتمال ثبت تکراری (${x.t.slice(11)} و ${y.t.slice(11)} · ${x.by===y.by?"هر دو با "+x.by:x.by+" و "+y.by})`;x.fl.push(m);y.fl.push(m);}})));
+    const okA=RA.filter(x=>x.result!=="ریجکت").reduce((s0,x)=>s0+x.pcs,0),allB=RB.reduce((s0,x)=>s0+x.pcs,0);
+    // تفکیک: هر جا مرحله‌ی بعد نام فرد مرحله‌ی قبل را دارد (تست ← مونتاژکار، پیچش ← تست‌کار و مونتاژکار)
+    const groups=[];const G=(title,fa_,fb)=>{const m={};RA.forEach(x=>{if(x.result==="ریجکت")return;const key=fa_(x)||"—";(m[key]=m[key]||{key,a:0,b:0}).a+=x.pcs;});RB.forEach(x=>{const key=fb(x)||"—";(m[key]=m[key]||{key,a:0,b:0}).b+=x.pcs;});
+      const rows=Object.values(m).map(o=>Object.assign(o,{diff:o.a-o.b})).sort((x,y)=>Math.abs(y.diff)-Math.abs(x.diff)||String(x.key).localeCompare(String(y.key),"fa"));groups.push({title,rows});};
+    if(ka==="asm"&&kb==="test")G("به تفکیک مونتاژکار",x=>x.person,x=>x.asm);
+    if(ka==="test"&&kb==="coil"){G("به تفکیک تست‌کار",x=>x.person,x=>x.test);G("به تفکیک مونتاژکار",x=>x.asm,x=>x.asm);}
+    if(!["jet","sew","carton"].includes(ka)&&!["jet","sew","carton"].includes(kb))G("به تفکیک «تعداد در هر بسته»",x=>String(x.per),x=>String(x.per));
+    G("به تفکیک شیفت",x=>x.shift,x=>x.shift);
+    return ok({lot:l,product:p.name||"",i,a:{name:na,ok:okA,n:RA.length},b:{name:nb,all:allB,n:RB.length},wait:okA-allB,groups,recs:[...RA,...RB].sort((x,y)=>x.t<y.t?-1:x.t>y.t?1:0)});});},
+  // فهرست مغایرت‌ها: لات‌هایی که در این بازه (روز کاری ثبت) ثبتی داشته‌اند و بین دو مرحله‌شان «بیشتر ثبت شده» است
+  mismatches(d){return needP("trace",u=>{let f=normDate(d.from)||addDays(prodDay(),-6),t=normDate(d.to)||prodDay();if(f>t)[f,t]=[t,f];
+    const lots=[...new Set([].concat(...RK.map(k=>DB[k])).filter(r=>{const x=workDay(r.t);return x>=f&&x<=t;}).map(r=>r.lot))].sort();const rows=[];
+    lots.forEach(l=>{const st=balSteps(l);const i0=lotInfo(l);st.forEach((s0,i)=>{if(!i||!s0.all&&!st[i-1].all)return;if(s0.wait<0||(d.all&&s0.wait>0))rows.push({lot:l,product:(prod(i0.code)||{}).name||i0.code||"",date:i0.date||"",i,a:st[i-1].name,b:s0.name,wait:s0.wait,last:[st[i-1].last,s0.last].sort().pop()||""});});});
+    rows.sort((x,y)=>(y.wait<0)-(x.wait<0)||Math.abs(y.wait)-Math.abs(x.wait));
+    return ok({from:f,to:t,rows:rows.slice(0,500),total:rows.length,lots:lots.length});});},
   lotBalance(d){return needP("trace",u=>{const q=normLot(d.q);if(q.length<3)return err("حداقل ۳ حرف از لات نامبر را وارد کنید.");
-    const ST=[["asm","مونتاژ"],["test","تست و QC"],["coil","پیچش"],["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]];
-    const pcs=(k,r)=>["jet","sew","carton"].includes(k)?(+r.packs||0):(+r.packs||0)*perOf(r);
     const lots=[...new Set([].concat(...RK.map(k=>DB[k])).filter(r=>r.lot.includes(q)).map(r=>r.lot))].sort().slice(0,50);
-    return ok({lots:lots.map(l=>{const steps=ST.map(([k,name])=>{const R=DB[k].filter(r=>r.lot===l);const rej=R.filter(r=>r.result==="ریجکت").reduce((s,r)=>s+pcs(k,r),0),all=R.reduce((s,r)=>s+pcs(k,r),0);
-        return{k,name,n:R.length,all,ok:all-rej,rej,last:R.reduce((m,r)=>!m||r.t>m?r.t:m,"")};});
-      steps.forEach((s0,i)=>{if(i)s0.wait=steps[i-1].ok-s0.all;});const i=lotInfo(l);
-      return{lot:l,product:(prod(i.code)||{}).name||i.code,date:i.date,steps};})});});},
+    return ok({lots:lots.map(l=>{const i=lotInfo(l);return{lot:l,product:(prod(i.code)||{}).name||i.code,date:i.date,steps:balSteps(l)};})});});},
   trace(d){return needP("trace",u=>{const q=normLot(d.q);
     // تاریخچه‌ی یک بسته: لات کامل + سریال
     const sq=String(d.serial||"").trim().toUpperCase();
@@ -729,7 +770,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.21-c";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.21-d";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -961,12 +1002,38 @@ $("#qGo").onclick=async()=>{const r=await api("trace",{q:$("#q").value,serial:$(
     <div class="tw"><table><thead><tr><th>مرحله</th><th>شیفت</th><th>زمان ثبت</th><th>سریال</th><th>محصول</th><th>تاریخ تولید</th><th>مونتاژکار</th><th>تست‌کار</th><th>QC کار</th><th>پیچش‌کار</th><th>اپراتور دوخت</th><th>تعداد بسته</th><th>در هر بسته</th><th>نتیجه</th><th>ثبت‌کننده</th></tr></thead><tbody>
     ${[...L.asm.map(x=>["مونتاژ",x]),...L.test.map(x=>["تست و QC",x]),...L.coil.map(x=>["پیچش",x]),...(L.jet||[]).map(x=>["جت پرینتر",x]),...(L.sew||[]).map(x=>["دوخت",x]),...(L.carton||[]).map(x=>["کارتن‌گذاری",x])].map(([k,x])=>`<tr><td><span class="pill p-acc">${k}</span></td><td>${esc(x.shift||"—")}</td><td class="mono">${x.t}</td><td class="mono">${esc(x.serial||"")}</td><td>${esc(x.product)}</td><td class="mono">${x.date}</td><td>${esc(x.asm||"")}</td><td>${esc(x.test||"")}</td><td>${esc(x.qc||"")}</td><td>${esc(x.coil||"")}</td><td>${esc(x.op||"")}</td><td class="n">${x.packs?fa(x.packs):""}</td><td class="n">${x.per?fa(x.per):""}</td><td>${x.result?`<span class="pill ${x.result==="تایید"?"p-ok":"p-bad"}">${x.result}</span> ${esc(x.reason||"")}`:""}</td><td>${esc(x.by)}</td></tr>`).join("")}</tbody></table></div>`;}).join("");};
 $("#q").addEventListener("keydown",e=>{if(e.key==="Enter")$("#qGo").click();});
-$("#trSeg").onclick=e=>{const b=e.target.closest("[data-tr]");if(!b)return;$$("#trSeg button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));$("#trBal").hidden=b.dataset.tr!=="b";$("#trTrace").hidden=b.dataset.tr!=="t";(b.dataset.tr==="b"?$("#bq"):$("#q")).focus();};
+$("#trSeg").onclick=e=>{const b=e.target.closest("[data-tr]");if(!b)return;$$("#trSeg button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));$("#trBal").hidden=b.dataset.tr!=="b";$("#trTrace").hidden=b.dataset.tr!=="t";$("#trMis").hidden=b.dataset.tr!=="m";if(b.dataset.tr==="m"){if(!$("#mOut").innerHTML)$("#mGo").click();return;}(b.dataset.tr==="b"?$("#bq"):$("#q")).focus();};
 // موجودی بین مراحل: هر لات یک ردیف جعبه؛ بین هر دو مرحله، مانده
 $("#bGo").onclick=async()=>{const r=await api("lotBalance",{q:$("#bq").value});if(!r.ok)return msg("#bOut",esc(r.error),"bad");if(!r.lots.length)return msg("#bOut","لاتی با این مشخصات پیدا نشد.","warn");
   $("#bOut").innerHTML=r.lots.map(L=>`<div class="balbox"><h3>لات <span class="mono">${esc(L.lot)}</span> <span class="hint" style="font-weight:400">${esc(L.product||"")} · تاریخ تولید <span class="mono">${esc(L.date||"—")}</span></span></h3>
-    <div class="balflow">${L.steps.map((s,i)=>`${i?`<div class="balwait${s.wait>0?" on":s.wait<0?" neg":""}" title="تاییدشده‌ی ${esc(L.steps[i-1].name)} منهای ثبت‌های ${esc(s.name)}"><small>مانده</small><b>${fa(Math.abs(s.wait))}</b><small>${s.wait>0?`در ${esc(L.steps[i-1].name)}`:s.wait<0?"بیشتر ثبت شده":"—"}</small></div>`:""}
-      <div class="balst${s.all?"":" off"}"><div class="bt">${i+1}. ${esc(s.name)}</div><b>${fa(s.ok)}</b><small>تاییدشده</small>${s.rej?`<span class="pill p-bad">ریجکت ${fa(s.rej)}</span>`:""}<small class="hint">${fa(s.n)} ثبت${s.last?" · آخرین: "+esc(s.last.slice(5)):""}</small></div>`).join("")}</div></div>`).join("");};
+    <div class="balflow">${L.steps.map((s,i)=>`${i?`<div class="balwait${s.wait>0?" on":s.wait<0?" neg":""}${s.wait?" clk":""}" ${s.wait?`role="button" tabindex="0" data-diff="${esc(L.lot)}|${i}"`:""} title="تاییدشده‌ی ${esc(L.steps[i-1].name)} منهای ثبت‌های ${esc(s.name)}${s.wait?" — برای دیدن جزئیات بزنید":""}"><small>مانده</small><b>${fa(Math.abs(s.wait))}</b><small>${s.wait>0?`در ${esc(L.steps[i-1].name)}`:s.wait<0?"بیشتر ثبت شده":"—"}</small></div>`:""}
+      <div class="balst${s.all?"":" off"}"><div class="bt">${i+1}. ${esc(s.name)}</div><b>${fa(s.ok)}</b><small>تاییدشده</small>${s.rej?`<span class="pill p-bad">ریجکت ${fa(s.rej)}</span>`:""}<small class="hint">${fa(s.n)} ثبت${s.last?" · آخرین: "+esc(s.last.slice(5)):""}</small></div>`).join("")}</div><div class="baldet"></div></div>`).join("");};
+$("#bOut").addEventListener("click",e=>{const w=e.target.closest("[data-diff]");if(!w)return;const box=w.closest(".balbox").querySelector(".baldet");const[l,i]=w.dataset.diff.split("|");openDiff(box,l,i,w);});
+$("#bOut").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.closest("[data-diff]")){e.preventDefault();e.target.click();}});
+// جزئیات یک مغایرت (بین دو مرحله‌ی یک لات)
+async function openDiff(box,lot,i,btn){if(box.dataset.k===lot+"|"+i&&box.innerHTML){box.innerHTML="";box.dataset.k="";$$("[data-diff].sel").forEach(x=>x.classList.remove("sel"));return;}
+  box.dataset.k=lot+"|"+i;box.innerHTML='<p class="hint">در حال خواندن ثبت‌ها…</p>';const r=await api("lotDiff",{lot,i});if(!r.ok){box.innerHTML=`<div class="msg bad">${esc(r.error)}</div>`;return;}
+  $$("[data-diff].sel").forEach(x=>x.classList.remove("sel"));if(btn)btn.classList.add("sel");box.innerHTML=diffHtml(r);box.scrollIntoView({behavior:"smooth",block:"nearest"});}
+function diffHtml(r){const w=r.wait,abs=Math.abs(w);
+  const head=`<div class="dfhead"><b>${esc(r.a.name)} ← ${esc(r.b.name)}</b> · لات <span class="mono">${esc(r.lot)}</span><br>تاییدشده‌ی ${esc(r.a.name)}: <b>${fa(r.a.ok)}</b> عدد (${fa(r.a.n)} ثبت) · ثبت‌های ${esc(r.b.name)}: <b>${fa(r.b.all)}</b> عدد (${fa(r.b.n)} ثبت) ←
+    ${w<0?`<span style="color:var(--bad);font-weight:700">${fa(abs)} عدد در ${esc(r.b.name)} بیشتر از ${esc(r.a.name)} ثبت شده</span>`:w>0?`<span style="color:#b06a00;font-weight:700">${fa(abs)} عدد هنوز در ${esc(r.a.name)} مانده (به ${esc(r.b.name)} نرسیده)</span>`:"بدون مغایرت"}</div>`;
+  const grp=r.groups.map(g=>{const bad=g.rows.filter(x=>x.diff);return`<div class="dfgrp"><h4>${esc(g.title)}</h4><div class="tw"><table><thead><tr><th>${esc(g.title.replace("به تفکیک ",""))}</th><th>تاییدشده‌ی ${esc(r.a.name)}</th><th>ثبت ${esc(r.b.name)}</th><th>اختلاف</th></tr></thead><tbody>
+    ${g.rows.map(x=>`<tr${x.diff<0?' class="dfneg"':x.diff>0?' class="dfpos"':""}><td>${esc(x.key)}</td><td class="n">${fa(x.a)}</td><td class="n">${fa(x.b)}</td><td class="n">${x.diff?`<b>${x.diff<0?"−":"+"}${fa(Math.abs(x.diff))}</b> <span class="hint">${x.diff<0?"بیشتر ثبت شده":"مانده"}</span>`:'<span class="hint">—</span>'}</td></tr>`).join("")}</tbody></table></div>${bad.length?"":'<p class="hint" style="margin:4px 0 0">در این تفکیک اختلافی نیست.</p>'}</div>`;}).join("");
+  const sus=r.recs.filter(x=>x.fl.length);
+  const recs=`<h4>همه‌ی ثبت‌های این دو مرحله (${fa(r.recs.length)} ثبت)${sus.length?` · <span style="color:var(--bad)">${fa(sus.length)} ثبت مشکوک</span>`:""}</h4><div class="tw"><table><thead><tr><th>مرحله</th><th>زمان ثبت</th><th>شیفت</th><th>فرد</th><th>سریال</th><th>تعداد</th><th>در هر بسته</th><th>به عدد</th><th>نتیجه</th><th>ثبت‌کننده</th><th>توضیح</th></tr></thead><tbody>
+    ${r.recs.map(x=>`<tr${x.fl.length?' class="dfsus"':""}><td><span class="pill p-acc">${esc(x.kind)}</span></td><td class="mono">${esc(x.t)}</td><td>${esc(x.shift)}</td><td>${esc(x.person||"—")}</td><td class="mono">${esc(x.serial||"")}</td><td class="n">${fa(x.packs)}</td><td class="n">${x.per===""?"—":fa(x.per)}</td><td class="n"><b>${fa(x.pcs)}</b></td>
+      <td>${x.result?`<span class="pill ${x.result==="تایید"?"p-ok":"p-bad"}">${esc(x.result)}</span>`:""}</td><td>${esc(x.by)}</td><td class="hint" style="color:${x.fl.length?"var(--bad)":""}">${x.fl.map(esc).join("<br>")}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint" style="margin:6px 0 0">برای اصلاح، در «ثبت تولید» آرشیو همان روز را باز کنید و ثبت را ویرایش یا حذف کنید. ثبت‌هایی که زمینه‌ی قرمز دارند ارزش بررسی دارند.</p>`;
+  return`<div class="dfbox">${head}${sus.length?`<div class="msg warn" style="margin-top:8px"><b>${fa(sus.length)} ثبت مشکوک:</b> ${sus.slice(0,6).map(x=>`${esc(x.kind)} ${esc(x.t.slice(11))} (${esc(x.by)}): ${esc(x.fl[0])}`).join(" · ")}${sus.length>6?" …":""}</div>`:""}<div class="dfgrid">${grp}</div>${recs}</div>`;}
+// فهرست مغایرت‌ها
+$("#mGo").onclick=async()=>{const r=await api("mismatches",{from:$("#mFrom").value,to:$("#mTo").value,all:$("#mAll").checked});if(!r.ok)return msg("#mOut",esc(r.error),"bad");$("#mFrom").value=r.from;$("#mTo").value=r.to;
+  if(!r.rows.length)return msg("#mOut",`در ${fa(r.lots)} لاتی که از ${esc(r.from)} تا ${esc(r.to)} ثبت داشته‌اند، مغایرتی (بیشتر ثبت شدن) پیدا نشد.`,"ok");
+  const neg=r.rows.filter(x=>x.wait<0).length;
+  $("#mOut").innerHTML=`<p class="hint">${fa(r.lots)} لات بررسی شد · <b style="color:var(--bad)">${fa(neg)} مغایرت «بیشتر ثبت شده»</b>${r.rows.length>neg?` · ${fa(r.rows.length-neg)} مانده‌ی عادی`:""}${r.total>r.rows.length?` (${fa(r.rows.length)} مورد اول)`:""}</p>
+  <div class="tw"><table><thead><tr><th>لات نامبر</th><th>محصول</th><th>تاریخ تولید</th><th>بین مراحل</th><th>مغایرت (عدد)</th><th>آخرین ثبت</th><th></th></tr></thead><tbody>
+  ${r.rows.map((x,j)=>`<tr${x.wait<0?' class="dfneg"':""}><td class="mono">${esc(x.lot)}</td><td>${esc(x.product)}</td><td class="mono">${esc(x.date)}</td><td>${esc(x.a)} ← ${esc(x.b)}</td><td class="n"><b>${fa(Math.abs(x.wait))}</b> <span class="hint">${x.wait<0?"بیشتر ثبت شده":"مانده در "+esc(x.a)}</span></td><td class="mono">${esc(x.last.slice(5))}</td><td><button class="btn sm" data-mdiff="${esc(x.lot)}|${x.i}|${j}">جزئیات</button></td></tr><tr class="mdet" hidden><td colspan="7"><div class="baldet" id="md${j}"></div></td></tr>`).join("")}</tbody></table></div>`;};
+$("#mOut").addEventListener("click",e=>{const b=e.target.closest("[data-mdiff]");if(!b)return;const[l,i,j]=b.dataset.mdiff.split("|");const tr=b.closest("tr").nextElementSibling;const box=$("#md"+j);if(!tr.hidden&&box.innerHTML){tr.hidden=true;box.innerHTML="";box.dataset.k="";b.textContent="جزئیات";return;}tr.hidden=false;b.textContent="بستن";openDiff(box,l,i);});
+["#mFrom","#mTo"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")$("#mGo").click();}));
 $("#bq").addEventListener("keydown",e=>{if(e.key==="Enter")$("#bGo").click();});$("#qS").addEventListener("keydown",e=>{if(e.key==="Enter")$("#qGo").click();});
 // تاریخچه‌ی یک بسته به شکل خط زمانی: مونتاژ ← تست و QC ← پیچش
 // لات + سریال: فقط همان اطلاعات فرم ثبت پیچشِ این بسته
