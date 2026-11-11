@@ -132,6 +132,7 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
 .kg em{font-style:normal;font-size:11.5px;color:var(--muted)}.kg strong{font-size:19px;font-variant-numeric:tabular-nums}
 .kpi .kp{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)}.kpi .kp .bar{flex:1;width:auto}
 @media (max-width:600px){.grid{grid-template-columns:1fr 1fr}}
+.hallhd{margin:18px 0 6px;font-size:15px;color:var(--acc,#1f5fae);border-bottom:1px solid var(--line);padding-bottom:4px}
 </style>
 </head>
 <body>
@@ -331,8 +332,8 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
           <span class="hint" id="gDay"></span>
         </div>
         <div id="gRows"></div>
-        <h2 style="margin-top:22px">برنامه‌ی تولید</h2>
-        <p class="sub">برنامه‌ی هر شیفت برای هر محصول در هر ایستگاه (به واحد همان ایستگاه). زیر هر خانه، عملکرد ثبت‌شده و انحراف از برنامه دیده می‌شود.</p>
+        <h2 style="margin-top:22px">برنامه‌ی تولید (تارگت هر شیفت)</h2>
+        <p class="sub">برنامه‌ی هر شیفت برای هر محصول در هر ایستگاه (به واحد همان ایستگاه). ایستگاه‌های سالن ۳ (جت پرینتر، دوخت، کارتن‌گذاری) هم اینجا تارگت هر شیفت را می‌گیرند، به عدد. زیر هر خانه، عملکرد ثبت‌شده و انحراف از برنامه دیده می‌شود و همین عدد تارگت کارت‌های شیفت در گزارش عملکرد است.</p>
         <div id="plRows"></div>
         <div class="actions" style="position:sticky;bottom:0;background:var(--card,#fff);padding:10px 0;z-index:5;border-top:1px solid var(--line)"><button class="btn p" id="gSave">ذخیره‌ی تارگت و برنامه</button><button class="btn" id="gCopy">کپی از روز قبل</button></div>
         <div id="gMsg"></div>
@@ -397,7 +398,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.21-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.21-c";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -484,6 +485,9 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
     add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});return m;}
 // تارگت هر نفر به تفکیک ایستگاه و محصول: تارگت همان محصول، وگرنه تارگت «همه‌ی محصولات» ایستگاه
 const PT=d=>(DB.pTargets||{})[d]||{},PL=d=>(DB.plans||{})[d]||{};
+// عملکرد سالن ۳ هر «ایستگاه|محصول|شیفت» در روز کاری (تعداد تاییدشده، به عدد)
+const H3K=[["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]];
+function h3Act(day,into){const A=into||{};H3K.forEach(([k,st])=>(DB[k]||[]).forEach(r=>{if(workDay(r.t)!==day||!r.shift||r.result==="ریجکت")return;const key=st+"|"+r.code+"|"+r.shift;const o=A[key]||(A[key]={packs:0,pcs:0});const n=+r.packs||0;o.packs+=n;o.pcs+=n;}));return A;}
 function tgFor(day,st,code){const p=PT(day)[st+"|"+code];if(p!==undefined&&p!=="")return +p;const s=(DB.stTargets[day]||{})[st];return s&&s.v!==undefined&&s.v!==""?+s.v:null;}
 const hasStT=(day,st)=>{const s=(DB.stTargets[day]||{})[st];return!!(s&&s.v!==undefined&&s.v!=="")||Object.keys(PT(day)).some(k=>k.startsWith(st+"|"));};
 // کسی که در یک روز چند محصول کار کرده: کسر انجام‌شده = Σ(عملکرد هر محصول ÷ تارگت آن محصول)؛ تارگت معادل = عملکرد ÷ کسر
@@ -593,8 +597,8 @@ const H={
   targets(d){return needP("target",()=>{const date=normDate(d.date)||prodDay();const act=actuals(date,date);
     const stations=STATIONS.filter(s=>s!=="QC").map(st=>({st,workers:Object.values(act).filter(a=>a.station===st).map(a=>({name:a.name,shift:mainShift(a,a.name),packs:a.packs,pcs:a.pcs,by:a.by}))}));
     // عملکرد هر «ایستگاه|محصول|شیفت» برای مقایسه با برنامه
-    const planAct={};Object.values(actualsS(date,date)).forEach(a=>{if(a.station.startsWith("QC"))return;Object.entries(a.by).forEach(([c,b])=>{const k=a.station+"|"+c+"|"+a.shift;const o=planAct[k]||(planAct[k]={packs:0,pcs:0});o.packs+=b.packs;o.pcs+=b.pcs;});});
-    return ok({stations,products:DB.products.filter(p=>active(p)).map(p=>({code:p.code,name:p.name})),shifts:DB.shifts,pT:PT(date),plans:PL(date),planAct,date,weekday:weekday(date),stT:DB.stTargets[date]||{},prev:addDays(date,-1),next:addDays(date,1)});});},
+    const planAct={};Object.values(actualsS(date,date)).forEach(a=>{if(a.station.startsWith("QC"))return;Object.entries(a.by).forEach(([c,b])=>{const k=a.station+"|"+c+"|"+a.shift;const o=planAct[k]||(planAct[k]={packs:0,pcs:0});o.packs+=b.packs;o.pcs+=b.pcs;});});h3Act(date,planAct);
+    return ok({stations,h3:H3K.map(x=>x[1]),products:DB.products.filter(p=>active(p)).map(p=>({code:p.code,name:p.name})),shifts:DB.shifts,pT:PT(date),plans:PL(date),planAct,date,weekday:weekday(date),stT:DB.stTargets[date]||{},prev:addDays(date,-1),next:addDays(date,1)});});},
   setTargets(d){return needP("target",()=>{const date=normDate(d.date);if(!date)return err("تاریخ معتبر نیست.");const t={};
     for(const[k,v]of Object.entries(d.values||{})){if(String(v).trim()==="")continue;const n=Number(v);if(!(n>=0))return err(`تارگت «${k.replace("|"," در ")}» باید عدد باشد.`);t[k]=String(n);}
     for(const v of Object.values(d.units||{}))if(!UNITS.includes(v))return err("واحد سنجش معتبر نیست.");for(const[k,v]of Object.entries(d.units||{}))setUnit(k,date,v);
@@ -656,7 +660,7 @@ const H={
     const rows=DB.events.filter(e=>{const x=e.t.slice(0,10);return x>=f&&x<=t&&(!d.by||e.by===d.by)&&(!d.action||e.action===d.action);}).slice().reverse();
     return ok({from:f,to:t,rows:rows.slice(0,1000),total:rows.length,users:[...new Set(DB.events.map(e=>e.by))],actions:[...new Set(DB.events.map(e=>e.action))]});});},
   exportAll(){return needP("xlsx",u=>{
-    const plRows=()=>{const out=[];Object.keys(DB.plans||{}).sort().forEach(d=>{const P=PL(d);if(!Object.keys(P).length)return;const A={};Object.values(actualsS(d,d)).forEach(a=>Object.entries(a.by).forEach(([c,b])=>{const k=a.station+"|"+c+"|"+a.shift;const o=A[k]||(A[k]={packs:0,pcs:0});o.packs+=b.packs;o.pcs+=b.pcs;}));
+    const plRows=()=>{const out=[];Object.keys(DB.plans||{}).sort().forEach(d=>{const P=PL(d);if(!Object.keys(P).length)return;const A={};Object.values(actualsS(d,d)).forEach(a=>Object.entries(a.by).forEach(([c,b])=>{const k=a.station+"|"+c+"|"+a.shift;const o=A[k]||(A[k]={packs:0,pcs:0});o.packs+=b.packs;o.pcs+=b.pcs;}));h3Act(d,A);
       Object.entries(P).forEach(([k,v])=>{const[st,c,sh]=k.split("|");const u=((DB.stTargets[d]||{})[st]||{}).u||"عدد";const a=A[k]?(u==="عدد"?A[k].pcs:A[k].packs):0;out.push([d,weekday(d),st,(prod(c)||{}).name||c,sh,u,+v,a,a-v,+v?a/v:""]);});});return out;};logEv(u.name,"دریافت فایل اکسل","");save();
     const dates=[...DB.asm.map(r=>r.date),...DB.test.map(r=>r.t.slice(0,10)),...DB.coil.map(r=>r.t.slice(0,10)),...Object.keys(DB.targets)].filter(Boolean).sort();
     const from=dates[0]||today(),to=today();const R=H.report({from,to});const pct=v=>v===null?"":v/100;
@@ -725,7 +729,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.21-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.21-c";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -882,8 +886,10 @@ let RECS=[],REC={kind:"همه",q:"",view:"sum",n:30,f:{},sort:{k:"t",dir:-1},hea
 // ستون‌های جدول ثبت‌ها: مرتب‌سازی با کلیک روی عنوان، فیلتر زیر هر عنوان
 const RCOLS={all:[["t","زمان","text"],["kind","مرحله / شیفت","shift"],["lot","لات نامبر","text"],["product","محصول","sel"],["ppl","افراد","text"],["packs","تعداد بسته",""],["per","تعداد در هر بسته",""],["result","نتیجه","sel"],["by","ثبت‌کننده","sel"],["",""]],
   sum:[["kind","مرحله / شیفت","shift"],["lot","لات نامبر","text"],["product","محصول","sel"],["ppl","افراد","text"],["n","تعداد ثبت",""],["packs","جمع بسته",""],["per","تعداد در هر بسته",""],["result","نتیجه","sel"],["t","از ساعت تا ساعت","text"],["",""]]};
+// سالن ۳: «تعداد» (مثلاً ۱۰٬۰۰۰ عدد) به جای «تعداد بسته» و بدون ستون «تعداد در هر بسته»
+const recCols=()=>HALL==="3"?RCOLS[REC.view].filter(c=>c[0]!=="per").map(c=>c[0]==="packs"?[c[0],REC.view==="sum"?"جمع تعداد":"تعداد",c[2]]:c):RCOLS[REC.view];
 const recVal=(x,k)=>k==="ppl"?pplOf(x):k==="lot"?x.lot+(x.serial?" #"+x.serial:""):k==="t"?x.t.slice(11):k==="kind"?x.kind:k==="result"?(x.result||""):String(x[k]??"");
-function recHead(){const C=RCOLS[REC.view],key=REC.view+"|"+RECS.length+"|"+REC.date;if(REC.head===key){recArrows();return;}REC.head=key;
+function recHead(){const C=recCols(),key=REC.view+"|"+HALL+"|"+RECS.length+"|"+REC.date;if(REC.head===key){recArrows();return;}REC.head=key;
   const opts=k=>{const v=[...new Set(RECS.map(x=>k==="shift"?x.shift||"":recVal(x,k)))].filter(Boolean).sort();return`<option value="">همه</option>`+v.map(o=>`<option${REC.f[k]===o?" selected":""}>${esc(o)}</option>`).join("");};
   $("#recentHead").innerHTML=`<tr>${C.map(([k,l])=>k?`<th><button class="sorth" data-sort="${k}" title="مرتب‌سازی">${l} <i></i></button></th>`:"<th></th>").join("")}</tr>
   <tr class="filt">${C.map(([k,,t])=>t==="text"?`<th><input data-rf="${k}" value="${esc(REC.f[k]||"")}" placeholder="فیلتر…" aria-label="فیلتر ${k}"></th>`:t==="sel"?`<th><select data-rf="${k}">${opts(k)}</select></th>`:t==="shift"?`<th><select data-rf="shift" aria-label="شیفت"><option value="">همه‌ی شیفت‌ها</option>${opts("shift").replace('<option value="">همه</option>',"")}</select></th>`:"<th></th>").join("")}</tr>`;recArrows();}
@@ -906,12 +912,12 @@ function renderRecent(){const K=["همه",...HALLK[HALL]];
   if(REC.view==="sum"){const G=new Map();rows.forEach(x=>{const k=x.kind+"|"+x.lot+"|"+pplOf(x)+"|"+(x.shift||"");const g=G.get(k)||(G.set(k,{x,n:0,packs:0,ok:0,rej:0,first:x.t,last:x.t,serials:[],per:new Set()}),G.get(k));g.per.add(+x.per||0);
       g.n++;g.packs+=+x.packs||0;if(x.result==="تایید")g.ok+=+x.packs||0;if(x.result==="ریجکت")g.rej+=+x.packs||0;if(x.t<g.first)g.first=x.t;if(x.t>g.last)g.last=x.t;if(x.serial)g.serials.push(x.serial);});
     const gv=(g,k)=>k==="n"?g.n:k==="packs"?g.packs:k==="per"?Math.max(...g.per):k==="result"?g.rej*1e6+g.ok:k==="t"?g.first:recVal(g.x,k);const SG=[...G.values()].sort((a,b)=>recCmp(gv(a,REC.sort.k),gv(b,REC.sort.k)));
-    $("#recent").innerHTML=SG.map(g=>{const x=g.x,sr=g.serials.sort();return`<tr><td><span class="pill p-acc">${x.kind}</span> <span class="hint">${esc(x.shift||"")}</span></td><td class="mono">${esc(x.lot)}${sr.length?` <span class="hint">#${esc(sr[0])}${sr.length>1?"–"+esc(sr[sr.length-1]):""}</span>`:""}</td><td>${esc(x.product)}</td><td>${esc(pplOf(x))}</td><td class="n">${fa(g.n)}</td><td class="n"><b>${fa(g.packs)}</b></td><td class="n">${[...g.per].filter(Boolean).sort((a,b)=>a-b).map(fa).join("، ")||"—"}</td>
+    $("#recent").innerHTML=SG.map(g=>{const x=g.x,sr=g.serials.sort();return`<tr><td><span class="pill p-acc">${x.kind}</span> <span class="hint">${esc(x.shift||"")}</span></td><td class="mono">${esc(x.lot)}${sr.length?` <span class="hint">#${esc(sr[0])}${sr.length>1?"–"+esc(sr[sr.length-1]):""}</span>`:""}</td><td>${esc(x.product)}</td><td>${esc(pplOf(x))}</td><td class="n">${fa(g.n)}</td><td class="n"><b>${fa(g.packs)}</b></td>${HALL==="3"?"":`<td class="n">${[...g.per].filter(Boolean).sort((a,b)=>a-b).map(fa).join("، ")||"—"}</td>`}
       <td>${g.ok?`<span class="pill p-ok">تایید ${fa(g.ok)}</span> `:""}${g.rej?`<span class="pill p-bad">ریجکت ${fa(g.rej)}</span>`:""}</td><td class="n">${g.first.slice(11)}${g.last!==g.first?" تا "+g.last.slice(11):""}</td>
       <td><button class="btn sm" data-open="${esc(x.kind)}|${esc(x.lot)}">جزئیات</button></td></tr>`;}).join("");$("#recMore").innerHTML="";return;}
   const rv=(x,k)=>k==="packs"?+x.packs||0:k==="per"?+x.per||0:k==="t"?x.t:recVal(x,k);rows.sort((a,b)=>recCmp(rv(a,REC.sort.k),rv(b,REC.sort.k)));
   $("#recent").innerHTML=rows.slice(0,REC.n).map(x=>{const res=x.result?`<span class="pill ${x.result==="تایید"?"p-ok":"p-bad"}">${x.result}</span>${x.reason?` <span class="hint">${esc(x.reason)}</span>`:""}`:"";
-    return`<tr><td class="n">${x.t.slice(11)}</td><td><span class="pill p-acc">${x.kind}</span> <span class="hint">${esc(x.shift||"")}</span></td><td class="mono">${esc(x.lot)}${x.serial?` <span class="hint">#${esc(x.serial)}</span>`:""}</td><td>${esc(x.product)}</td><td>${esc(pplOf(x))}</td><td class="n">${x.packs===undefined||x.packs===""?"—":fa(x.packs)}</td><td class="n">${x.per?fa(x.per):"—"}</td><td>${res}</td><td>${esc(x.by)}${x.editedAt?`<br><span class="hint">ویرایش: ${esc(x.editedBy)} ${esc(x.editedAt.slice(11))}</span>`:""}</td><td style="white-space:nowrap"><button class="btn sm" data-edit="${x.id}" data-kind="${esc(x.kind)}">ویرایش</button> <button class="btn sm danger" data-del="${x.id}" data-kind="${esc(x.kind)}">حذف</button></td></tr>`;}).join("");
+    return`<tr><td class="n">${x.t.slice(11)}</td><td><span class="pill p-acc">${x.kind}</span> <span class="hint">${esc(x.shift||"")}</span></td><td class="mono">${esc(x.lot)}${x.serial?` <span class="hint">#${esc(x.serial)}</span>`:""}</td><td>${esc(x.product)}</td><td>${esc(pplOf(x))}</td><td class="n">${x.packs===undefined||x.packs===""?"—":fa(x.packs)}</td>${HALL==="3"?"":`<td class="n">${x.per?fa(x.per):"—"}</td>`}<td>${res}</td><td>${esc(x.by)}${x.editedAt?`<br><span class="hint">ویرایش: ${esc(x.editedBy)} ${esc(x.editedAt.slice(11))}</span>`:""}</td><td style="white-space:nowrap"><button class="btn sm" data-edit="${x.id}" data-kind="${esc(x.kind)}">ویرایش</button> <button class="btn sm danger" data-del="${x.id}" data-kind="${esc(x.kind)}">حذف</button></td></tr>`;}).join("");
   $("#recMore").innerHTML=rows.length>REC.n?`<button class="btn" id="recMoreBtn">نمایش ${fa(Math.min(30,rows.length-REC.n))} ثبت بیشتر</button><span class="hint">${fa(REC.n)} از ${fa(rows.length)} ثبت نمایش داده شده</span>`:`<span class="hint">${fa(rows.length)} ثبت</span>`;}
 $("#recentHead").addEventListener("click",e=>{const b=e.target.closest("[data-sort]");if(!b)return;const k=b.dataset.sort;REC.sort=REC.sort.k===k?{k,dir:-REC.sort.dir}:{k,dir:["t","packs","per","n","result"].includes(k)?-1:1};REC.n=30;renderRecent();});
 $("#recentHead").addEventListener("input",e=>{const f=e.target.dataset.rf;if(!f)return;REC.f[f]=e.target.value;REC.n=30;renderRecent();});
@@ -1073,11 +1079,11 @@ async function initTarget(date){const r=await api("targets",{date:date||$("#gDat
       <details${workers.length?"":" hidden"}><summary>نفرات کارکرده در این روز (${fa(workers.length)} نفر)</summary><div class="tw"><table><thead><tr><th>نام</th><th>محصولات</th><th>عملکرد</th><th>تارگت</th><th>انحراف</th><th>تحقق</th></tr></thead><tbody>
       ${workers.map((w,i)=>`<tr data-wi="${i}"><td>${esc(w.name)} <span class="hint">${esc(w.shift)}</span></td><td class="hint">${Object.keys(w.by).map(pn).join("، ")}</td><td class="n act"></td><td class="n tt"></td><td class="n dv"></td><td class="n pc"></td></tr>`).join("")}</tbody></table></div></details></div>`;}).join("");
   // برنامه‌ی تولید: هر ایستگاه یک جدول، ردیف = محصول، ستون = شیفت
-  $("#plRows").innerHTML=r.stations.map(({st})=>`<div class="stbox" data-pst="${st}"><div class="sthd"><span class="pill p-acc">${st}</span><span class="hint pu"></span><div class="stsum"></div></div>
+  const H3S=r.h3||[];$("#plRows").innerHTML=[...r.stations.map(x=>x.st),...H3S].map((st,i,all)=>(i===0?`<h3 class="hallhd">سالن ۲</h3>`:st===H3S[0]?`<h3 class="hallhd">سالن ۳ <span class="hint">(تارگت هر شیفت، به عدد)</span></h3>`:"")+`<div class="stbox" data-pst="${st}"><div class="sthd"><span class="pill p-acc">${st}</span><span class="hint pu"></span><div class="stsum"></div></div>
     <div class="tw"><table><thead><tr><th>محصول</th>${r.shifts.map(sh=>`<th>شیفت ${esc(sh)}</th>`).join("")}<th>جمع روز</th></tr></thead><tbody>
     ${r.products.map(p=>`<tr data-code="${p.code}"><td>${esc(p.name)}</td>${r.shifts.map(sh=>`<td class="plc" data-k="${st}|${p.code}|${esc(sh)}">${inp(`data-pl="${st}|${p.code}|${esc(sh)}"`,r.plans[st+"|"+p.code+"|"+sh]??"","—",90)}<small></small></td>`).join("")}<td class="plc tot"><small></small></td></tr>`).join("")}
     <tr class="subtot"><td>جمع</td>${r.shifts.map(sh=>`<td class="plc stot" data-sh="${esc(sh)}"><small></small></td>`).join("")}<td class="plc gt"><small></small></td></tr></tbody></table></div></div>`).join("");
-  r.stations.forEach(x=>tgSt(x.st));msg("#gMsg","");}
+  r.stations.forEach(x=>tgSt(x.st));H3S.forEach(st=>plSt(st,"عدد"));msg("#gMsg","");}
 const tgPct=(a,t)=>t?`${fa(Math.round(a/t*1000)/10)}٪`:'<span class="hint">—</span>';
 const tgDash='<span class="hint">—</span>';
 // محاسبه‌ی زنده با عددها و واحد واردشده (بدون ذخیره)
@@ -1108,7 +1114,7 @@ function plSt(st,u){const box=$(`#plRows .stbox[data-pst="${st}"]`);if(!box)retu
   box.querySelector(".stsum").innerHTML=gHas?`<span>برنامه‌ی روز <b>${fa(gP)}</b> ${u}</span><span>عملکرد <b>${fa(gA)}</b></span><span>${devCell(gA-gP)}</span>`:`<span class="hint">برنامه‌ای ثبت نشده</span>`;}
 $("#gRows").addEventListener("input",e=>{const b=e.target.closest(".stbox");if(b)tgSt(b.dataset.st);});
 $("#gRows").addEventListener("change",e=>{const b=e.target.closest(".stbox");if(b)tgSt(b.dataset.st);});
-$("#plRows").addEventListener("input",e=>{const b=e.target.closest(".stbox");if(b)tgSt(b.dataset.pst);});
+$("#plRows").addEventListener("input",e=>{const b=e.target.closest(".stbox");if(!b)return;const st=b.dataset.pst;if((TG.h3||[]).includes(st))plSt(st,"عدد");else tgSt(st);});
 $("#gPrev").onclick=()=>TG&&initTarget(TG.prev);$("#gNext").onclick=()=>TG&&initTarget(TG.next);
 $("#gDate").addEventListener("change",()=>initTarget($("#gDate").value));
 $("#gSave").onclick=async()=>{const st={},pt={},plans={};$$("#gRows [data-stv]").forEach(i=>st[i.dataset.stv]={v:i.value,u:$(`#gRows [data-stu="${i.dataset.stv}"]`).value});$$("#gRows [data-pt]").forEach(i=>pt[i.dataset.pt]=i.value);$$("#plRows [data-pl]").forEach(i=>plans[i.dataset.pl]=i.value);const r=await api("setTargets",{date:$("#gDate").value,st,pt,plans});if(!r.ok)return msg("#gMsg",esc(r.error),"bad");await initTarget($("#gDate").value);msg("#gMsg","تارگت و برنامه‌ی "+esc($("#gDate").value)+" ذخیره شد.","ok");};
