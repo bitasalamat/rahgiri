@@ -377,6 +377,9 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
         <h2 style="margin-top:22px">شیفت‌ها</h2><p class="sub">نام شیفت‌ها را با ویرگول جدا کنید (مثلاً: صبح، عصر، شب). در فرم‌های ثبت از همین فهرست انتخاب می‌شود.</p>
         <div class="f" style="max-width:420px"><input id="sShifts" aria-label="شیفت‌ها"></div>
         <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgS">ذخیره‌ی تنظیمات</button></div><div id="setMsgS"></div>
+        <h2 style="margin-top:22px">تارگت پیش‌فرض سالن ۳</h2><p class="sub">تارگت هر شیفت برای جت پرینتر، دوخت و کارتن‌گذاری (به عدد، برای همه‌ی محصولات). در گزارش عملکرد، هر روزی که در تب «تارگت روزانه» برای آن ایستگاه و شیفت برنامه‌ای زده نشده باشد، همین عدد تارگت شیفت حساب می‌شود.</p>
+        <div class="tw"><table><thead id="h3tHead"></thead><tbody id="h3tRows"></tbody></table></div>
+        <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgH">ذخیره‌ی تنظیمات</button></div><div id="setMsgH"></div>
         <h2 style="margin-top:22px">کاربران سامانه (مدیر و آمار)</h2><p class="sub">فقط این افراد با نام کاربری و رمز عبور وارد سامانه می‌شوند. برای هر نفر تیک بزنید به کدام تب‌ها دسترسی دارد. آمارگیر فقط ثبت‌های خودش را می‌بیند و ویرایش یا حذف می‌کند؛ مدیر همه را.</p>
         <div class="tw"><table><thead><tr><th>نام</th><th>نقش</th><th>نام کاربری</th><th>رمز عبور</th><th>دسترسی به تب‌ها</th><th>فعال</th></tr></thead><tbody id="lRows"></tbody></table></div>
         <button class="btn sm" id="lAdd" style="margin-top:8px">+ کاربر سامانه</button>
@@ -409,7 +412,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.21-d";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.21-e";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -426,7 +429,7 @@ function seed(){return{products:BAKED.products,users:BAKED.users,shifts:BAKED.sh
 let DB;try{DB=JSON.parse(localStorage.getItem(KEY));}catch(e){DB=null;}
 // فرم تازه‌تر (اسامی جدید) ثبت‌های قبلیِ آپلودنشده را پاک نمی‌کند
 if(!DB||!DB.asm)DB=seed();else if(DB.bakedAt!==BAKED.at)Object.assign(DB,{products:BAKED.products,users:BAKED.users,shifts:BAKED.shifts,bakedAt:BAKED.at,session:BAKED.me});
-if(!DB.units)DB.units={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
+if(!DB.units)DB.units={};if(!DB.h3t)DB.h3t={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 const ok=o=>Object.assign({ok:true},o||{});
 // لاگ فعالیت: فقط اضافه می‌شود، هیچ‌وقت ویرایش یا حذف نمی‌شود
@@ -639,7 +642,7 @@ const H={
     const stations=STATIONS.filter(s=>s!=="QC").map(st=>({st,workers:Object.values(act).filter(a=>a.station===st).map(a=>({name:a.name,shift:mainShift(a,a.name),packs:a.packs,pcs:a.pcs,by:a.by}))}));
     // عملکرد هر «ایستگاه|محصول|شیفت» برای مقایسه با برنامه
     const planAct={};Object.values(actualsS(date,date)).forEach(a=>{if(a.station.startsWith("QC"))return;Object.entries(a.by).forEach(([c,b])=>{const k=a.station+"|"+c+"|"+a.shift;const o=planAct[k]||(planAct[k]={packs:0,pcs:0});o.packs+=b.packs;o.pcs+=b.pcs;});});h3Act(date,planAct);
-    return ok({stations,h3:H3K.map(x=>x[1]),products:DB.products.filter(p=>active(p)).map(p=>({code:p.code,name:p.name})),shifts:DB.shifts,pT:PT(date),plans:PL(date),planAct,date,weekday:weekday(date),stT:DB.stTargets[date]||{},prev:addDays(date,-1),next:addDays(date,1)});});},
+    return ok({stations,h3:H3K.map(x=>x[1]),h3t:DB.h3t||{},products:DB.products.filter(p=>active(p)).map(p=>({code:p.code,name:p.name})),shifts:DB.shifts,pT:PT(date),plans:PL(date),planAct,date,weekday:weekday(date),stT:DB.stTargets[date]||{},prev:addDays(date,-1),next:addDays(date,1)});});},
   setTargets(d){return needP("target",()=>{const date=normDate(d.date);if(!date)return err("تاریخ معتبر نیست.");const t={};
     for(const[k,v]of Object.entries(d.values||{})){if(String(v).trim()==="")continue;const n=Number(v);if(!(n>=0))return err(`تارگت «${k.replace("|"," در ")}» باید عدد باشد.`);t[k]=String(n);}
     for(const v of Object.values(d.units||{}))if(!UNITS.includes(v))return err("واحد سنجش معتبر نیست.");for(const[k,v]of Object.entries(d.units||{}))setUnit(k,date,v);
@@ -685,6 +688,8 @@ const H={
       const n=+r.packs||0,rj=r.result==="ریجکت";const o=B(d0,st,r.shift,"عدد");o.packs+=rj?0:n;o.rej+=rj?n:0;if(r.op)o.people.add(r.op);}));
     // تارگت ایستگاه و شیفت از «برنامه‌ی تولید» هر شیفت خوانده می‌شود (هر جا برنامه ثبت شده باشد)
     Object.entries(planSh).forEach(([k,v])=>{const[d0,st,sh,u]=k.split("|");const o=B(d0,st,sh,u);o.target=v;o.hasT=true;o.plan=true;});
+    // سالن ۳: اگر برای آن روز و شیفت برنامه‌ای نیست، تارگت پیش‌فرض شیفت از تنظیمات
+    const H3T=DB.h3t||{};Object.values(sb).forEach(o=>{if(o.plan||!H3K.some(x=>x[1]===o.station))return;const v=H3T[o.station+"|"+o.shift];if(v===undefined||v==="")return;o.target=+v;o.hasT=true;o.def=true;});
     // آخرین ثبت هر ایستگاه در این بازه (برای نمایش ریز زیر کارت‌ها)
     const inRg=(r)=>{const d=basis==="prod"?r.date:workDay(r.t);return d>=f&&d<=t&&(!code||r.code===code);};const lastOf=(arr,ok,w)=>arr.filter(r=>inRg(r,w)&&(!ok||ok(r))).reduce((m,r)=>!m||r.t>m.t||(r.t===m.t&&r.id>m.id)?r:m,null);
     const L1=(r,name)=>r?{t:r.t,lot:r.lot,serial:r.serial||"",name,by:r.by,packs:r.packs,result:r.result||""}:null;
@@ -733,7 +738,7 @@ const H={
       {name:"محصولات",header:["کد","نام محصول","تعداد در بسته","فعال"],rows:DB.products.map(p=>[p.code,p.name,+p.pack,p.active])},
       {name:"کاربران",header:["نام","نقش","نام کاربری","دسترسی‌ها","شیفت پیش‌فرض","ایستگاه‌ها (واحد و تارگت پیش‌فرض)","فعال"],
         rows:DB.users.map(u=>[u.name,u.role,u.username||"",canLogin(u)?permsOf(u).map(k=>PERMS.find(x=>x[0]===k)[1]).join("، "):"",u.shift||"",ustations(u).map(st=>`${st}: ${stOf(u)[st]||"—"} ${unitOf(u.name,st,today())}`).join(" · "),u.active])}]});});},
-  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts}));},
+  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts,h3t:DB.h3t||{},h3:H3K.map(x=>x[1])}));},
   saveSettings(d){return needP("set",()=>{const seen=new Set(),prods=[];for(const p of d.products){const code=String(p.code||"").trim().toUpperCase(),name=String(p.name||"").trim();if(!code&&!name)continue;
       if(!/^[A-Z0-9]{1,10}$/.test(code))return err(`کد «${code||"خالی"}» باید ۱ تا ۱۰ حرف انگلیسی یا عدد باشد (بدون فاصله).`);if(seen.has(code))return err(`کد «${code}» تکراری است.`);if(!name)return err(`نام محصول کد ${code} خالی است.`);seen.add(code);const rp=parseInt(p.rep,10);if(String(p.rep||"").trim()&&!(rp>=1&&rp<=20))return err(`تکرار مجاز لات/سریال برای ${code} باید عددی بین ۱ تا ۲۰ باشد (یا خالی).`);prods.push({code,name,pack:parseInt(p.pack,10)||100,rep:rp>=1?rp:"",active:p.active==="خیر"?"خیر":"بله"});}
     const shifts=[...new Set(String(d.shifts||"").split(/[،,]/).map(x=>x.trim()).filter(Boolean))];if(!shifts.length)return err("حداقل یک شیفت تعریف کنید.");
@@ -743,7 +748,8 @@ const H={
       if(login){if(!/^[a-z0-9._-]{3,}$/.test(un))return err(`نام کاربری «${name}» باید حداقل ۳ حرف انگلیسی/عدد باشد.`);if(users.some(y=>y.username===un))return err(`نام کاربری «${un}» تکراری است.`);
         if(String(x.pin||"").length<4)return err(`رمز عبور «${name}» باید حداقل ۴ کاراکتر باشد.`);}
       const perms=login?PERM_KEYS.filter(k=>(x.perms||[]).includes(k)):[];seenU.add(name);const sh=String(x.shift||"").trim();if(sh&&!shifts.includes(sh))return err(`شیفت «${name}» در فهرست شیفت‌ها نیست.`);users.push({name,role:x.role,username:login?un:"",perms,shift:sh,pin:login?String(x.pin):"",st,active:x.active==="خیر"?"خیر":"بله"});}
-    if(!users.some(x=>x.role==="مدیر"&&x.active==="بله"))return err("حداقل یک کاربر فعال با نقش «مدیر» لازم است.");if(!users.some(x=>x.active==="بله"&&x.perms.includes("set")))return err("حداقل یک کاربر فعال باید به تب «تنظیمات» دسترسی داشته باشد، وگرنه کسی نمی‌تواند تنظیمات را باز کند.");DB.products=prods;DB.users=users;DB.shifts=shifts;logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
+    if(!users.some(x=>x.role==="مدیر"&&x.active==="بله"))return err("حداقل یک کاربر فعال با نقش «مدیر» لازم است.");if(!users.some(x=>x.active==="بله"&&x.perms.includes("set")))return err("حداقل یک کاربر فعال باید به تب «تنظیمات» دسترسی داشته باشد، وگرنه کسی نمی‌تواند تنظیمات را باز کند.");let h3t=null;if(d.h3t){h3t={};for(const[k,v]of Object.entries(d.h3t)){const t=String(v??"").trim();if(t==="")continue;const[st,sh]=k.split("|");if(!H3K.some(x=>x[1]===st))continue;const n=Number(t);if(!(n>=0))return err(`تارگت ${st} شیفت ${sh} باید عدد باشد.`);h3t[k]=String(n);}}
+    DB.products=prods;DB.users=users;DB.shifts=shifts;if(h3t)DB.h3t=h3t;logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
     const noSt=users.filter(x=>x.role==="اپراتور"&&x.active==="بله"&&!Object.keys(x.st).length).map(x=>x.name);
     return ok({warn:noSt.length?`${noSt.length} اپراتور هنوز ایستگاهی ندارند؛ در فرم‌ها زیر «سایر اپراتورها» قابل انتخاب‌اند، ولی تا تیک ایستگاه و تارگتشان را نزنید، تارگت و انحراف ندارند.`:""});});}
 };
@@ -770,7 +776,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.21-d";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.21-e";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1150,7 +1156,7 @@ async function initTarget(date){const r=await api("targets",{date:date||$("#gDat
     <div class="tw"><table><thead><tr><th>محصول</th>${r.shifts.map(sh=>`<th>شیفت ${esc(sh)}</th>`).join("")}<th>جمع روز</th></tr></thead><tbody>
     ${r.products.map(p=>`<tr data-code="${p.code}"><td>${esc(p.name)}</td>${r.shifts.map(sh=>`<td class="plc" data-k="${st}|${p.code}|${esc(sh)}">${inp(`data-pl="${st}|${p.code}|${esc(sh)}"`,r.plans[st+"|"+p.code+"|"+sh]??"","—",90)}<small></small></td>`).join("")}<td class="plc tot"><small></small></td></tr>`).join("")}
     <tr class="subtot"><td>جمع</td>${r.shifts.map(sh=>`<td class="plc stot" data-sh="${esc(sh)}"><small></small></td>`).join("")}<td class="plc gt"><small></small></td></tr></tbody></table></div></div>`).join("");
-  r.stations.forEach(x=>tgSt(x.st));H3S.forEach(st=>plSt(st,"عدد"));msg("#gMsg","");}
+  r.stations.forEach(x=>tgSt(x.st));H3S.forEach(st=>{plSt(st,"عدد");const df=r.shifts.map(sh=>(r.h3t||{})[st+"|"+sh]!==undefined?`${sh} ${fa((r.h3t||{})[st+"|"+sh])}`:"").filter(Boolean);const pu=$(`#plRows .stbox[data-pst="${st}"] .pu`);if(pu)pu.textContent="واحد: عدد · "+(df.length?"پیش‌فرض تنظیمات: "+df.join("، ")+" (اگر اینجا برنامه بزنید، برنامه جایگزین می‌شود)":"پیش‌فرض در تنظیمات ثبت نشده");});msg("#gMsg","");}
 const tgPct=(a,t)=>t?`${fa(Math.round(a/t*1000)/10)}٪`:'<span class="hint">—</span>';
 const tgDash='<span class="hint">—</span>';
 // محاسبه‌ی زنده با عددها و واحد واردشده (بدون ذخیره)
@@ -1202,7 +1208,10 @@ $("#lgGo").onclick=loadLog;$("#lgBy").onchange=loadLog;$("#lgAct").onchange=load
 
 /* ---------- تنظیمات ---------- */
 let SET=null;
-async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();}
+async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();drawH3t();}
+function drawH3t(){const sh=SET.shifts||[],H=SET.h3t||{};$("#h3tHead").innerHTML=`<tr><th>ایستگاه</th>${sh.map(x=>`<th>شیفت ${esc(x)}</th>`).join("")}</tr>`;
+  $("#h3tRows").innerHTML=(SET.h3||["جت پرینتر","دوخت","کارتن‌گذاری"]).map(st=>`<tr><td><b>${esc(st)}</b></td>${sh.map(x=>`<td><input type="number" min="0" data-h3t="${esc(st)}|${esc(x)}" value="${esc(H[st+"|"+x]??"")}" placeholder="—" style="width:120px"></td>`).join("")}</tr>`).join("");}
+const readH3t=()=>{const o={};$$("#h3tRows [data-h3t]").forEach(i=>o[i.dataset.h3t]=i.value);return o;};
 const yn=v=>`<select data-f="active"><option${v!=="خیر"?" selected":""}>بله</option><option${v==="خیر"?" selected":""}>خیر</option></select>`;
 function drawSet(){$("#sShifts").value=SET.shifts.join("، ");$("#pRows").innerHTML=SET.products.map(p=>`<tr><td><input data-f="code" value="${esc(p.code)}" maxlength="10" class="ltr" style="width:120px;text-transform:uppercase"></td><td><input data-f="name" value="${esc(p.name)}" style="width:180px"></td><td><input data-f="pack" type="number" value="${esc(p.pack)}" style="width:90px"></td><td><input data-f="rep" type="number" min="1" max="20" value="${esc(p.rep??"")}" placeholder="${/میکرو\s*ست/.test(String(p.name||""))?"4":"—"}" style="width:80px"></td><td>${yn(p.active)}</td></tr>`).join("");
   const isL=u=>["مدیر","آمار"].includes(u.role);
@@ -1226,7 +1235,7 @@ $("#uAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.spli
 $("#lAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean);SET.users.push({name:"",role:"آمار",username:"",pin:"",perms:["entry","trace","report"],st:{},active:"بله"});drawSet();};
 // دکمه‌ی ذخیره زیر هر جدول؛ همه‌ی تنظیمات با هم ذخیره می‌شود و پیام کنار همان دکمه می‌آید
 $$(".setSaveBtn").forEach(b=>b.onclick=async()=>{const m="#"+b.dataset.msg;$$(".setSaveBtn").forEach(x=>x.disabled=true);
-  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value});$$(".setSaveBtn").forEach(x=>x.disabled=false);
+  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value,h3t:readH3t()});$$(".setSaveBtn").forEach(x=>x.disabled=false);
   if(!r.ok)return msg(m,esc(r.error),"bad");META=await api("meta");ME=META.user;showApp();if(current==="set"){["#setMsgP","#setMsgS","#setMsgL","#setMsg"].forEach(x=>msg(x,""));msg(m,"تنظیمات ذخیره شد."+(r.warn?"<br>"+esc(r.warn):""),r.warn?"warn":"ok");}});
 // جستجو و فیلتر اپراتورها (ردیف‌های پنهان هم ذخیره می‌شوند)
 function uFilter(){const q=$("#uSearch").value.trim().replace(/ي/g,"ی").replace(/ك/g,"ک"),f=$("#uFilter").value;let n=0,all=0;
