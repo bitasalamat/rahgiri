@@ -335,7 +335,7 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
           <button class="btn p" id="rGo">نمایش</button>
         </div>
         <div class="row" style="margin-top:10px;align-items:center" id="rQc" role="group" aria-label="مراحل QC"><b style="font-size:13px">نمایش ایستگاه کنترل کیفیت:</b><label class="ck"><input type="checkbox" value="asm" checked> QC مونتاژ</label><label class="ck"><input type="checkbox" value="test" checked> QC تست</label><label class="ck"><input type="checkbox" value="coil" checked> QC پیچش</label></div>
-        <div class="row" style="margin-top:12px" id="rView" role="group" aria-label="نوع گزارش"><button class="chip" data-view="p" aria-pressed="true">عملکرد بر اساس فرد</button><button class="chip" data-view="s" aria-pressed="false">عملکرد بر اساس شیفت</button><button class="chip" data-view="h" aria-pressed="false">هیستوری فرد</button></div>
+        <div class="row" style="margin-top:12px" id="rView" role="group" aria-label="نوع گزارش"><button class="chip" data-view="p" aria-pressed="true">عملکرد بر اساس فرد</button><button class="chip" data-view="s" aria-pressed="false">عملکرد بر اساس شیفت</button><button class="chip" data-view="h" aria-pressed="false">هیستوری فرد</button><button class="chip" data-view="w" aria-pressed="false">دوباره‌کاری هر نفر</button></div>
         <div id="rOut"></div>
       </div>
     </section>
@@ -359,6 +359,36 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
     </section>
 
     <!-- لاگ -->
+    <section id="v-rework" class="view" hidden>
+      <div class="card" id="rwCard">
+        <h2>ثبت دوباره‌کاری</h2>
+        <p class="sub">تعداد دوباره‌کاری <b>از عملکرد فرد مقصر در روز تولید همان بسته کم</b> و <b>به عملکرد انجام‌دهنده در روز دوباره‌کاری اضافه</b> می‌شود (سالن ۲). با زدن لات و ایستگاه مقصر، کسانی که در آن ایستگاه روی این لات کار کرده‌اند پیشنهاد می‌شوند؛ اگر سریال را بزنید، دقیقاً همان نفر.</p>
+        <div class="hallseg" id="rwHall" role="tablist" aria-label="سالن"><button data-h="2" aria-selected="true">سالن ۲</button><button data-h="3" aria-selected="false">سالن ۳</button></div>
+        <div class="grid" style="margin-top:12px">
+          <div class="f"><label for="rw_day">روز کاری دوباره‌کاری<span class="req">*</span></label><select id="rw_day"></select></div>
+          <div class="f"><label for="rw_shift">شیفت دوباره‌کاری<span class="req">*</span></label><select id="rw_shift"></select></div>
+          <div class="f"><label for="rw_code">محصول<span class="req">*</span></label><select id="rw_code"></select></div>
+          <div class="f"><label for="rw_lot">لات نامبر<span class="req">*</span></label><input id="rw_lot" class="ltr" placeholder="IS261110"></div>
+          <div class="f"><label for="rw_serial">سریال <span class="hint">(اختیاری)</span></label><input id="rw_serial" class="ltr" placeholder="اختیاری"></div>
+          <div class="f"><label for="rw_fst">ایستگاه مقصر<span class="req">*</span></label><select id="rw_fst"></select></div>
+          <div class="f"><label for="rw_fp">فرد مقصر<span class="req">*</span></label><select id="rw_fp"></select><span class="hint" id="rw_fpHint"></span></div>
+          <div class="f"><label for="rw_fday">روز کاری مقصر (روز تولید)<span class="req">*</span></label><input id="rw_fday" class="ltr" placeholder="1405/08/20"></div>
+          <div class="f"><label for="rw_dst">ایستگاه انجام‌دهنده</label><select id="rw_dst"></select></div>
+          <div class="f"><label for="rw_dp">انجام‌دهنده‌ی دوباره‌کاری</label><select id="rw_dp"></select></div>
+          <div class="f"><label for="rw_packs" id="rw_packsL">تعداد بسته<span class="req">*</span></label><input id="rw_packs" type="number" min="1"></div>
+          <div class="f" id="rw_perBox"><label for="rw_per">تعداد در هر بسته<span class="req">*</span></label><input id="rw_per" type="number" min="1"></div>
+          <div class="f"><label for="rw_reason">علت<span class="req">*</span></label><select id="rw_reason"></select></div>
+          <div class="f" id="rw_noteBox"><label for="rw_note">توضیح <span class="hint" id="rw_noteH">(اختیاری)</span></label><input id="rw_note"></div>
+        </div>
+        <div class="actions"><button class="btn p" id="rw_go">ثبت دوباره‌کاری</button><span class="missing" id="rw_miss"></span></div>
+        <div id="rw_msg"></div>
+      </div>
+      <div class="card">
+        <h2>دوباره‌کاری‌های ثبت‌شده</h2>
+        <div class="row"><div class="f"><label for="rwListDay">روز کاری</label><select id="rwListDay"></select></div></div>
+        <div id="rwList"></div>
+      </div>
+    </section>
     <section id="v-log" class="view" hidden>
       <div class="card">
         <h2>لاگ فعالیت</h2><p class="sub">هر ثبت، حذف، تغییر تارگت و تنظیمات، ورود و خروج با نام کاربر، تاریخ و ساعت اینجا می‌ماند و قابل حذف نیست.</p>
@@ -383,6 +413,8 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
         <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgP">ذخیره‌ی تنظیمات</button></div><div id="setMsgP"></div>
         <h2 style="margin-top:22px">شیفت‌ها</h2><p class="sub">نام شیفت‌ها را با ویرگول جدا کنید (مثلاً: صبح، عصر، شب). در فرم‌های ثبت از همین فهرست انتخاب می‌شود.</p>
         <div class="f" style="max-width:420px"><input id="sShifts" aria-label="شیفت‌ها"></div>
+        <h2 style="margin-top:22px">علت‌های دوباره‌کاری</h2><p class="sub">با ویرگول جدا کنید. گزینه‌ی «سایر» همیشه هست.</p>
+        <div class="f" style="max-width:640px"><input id="sRwR" aria-label="علت‌های دوباره‌کاری"></div>
         <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgS">ذخیره‌ی تنظیمات</button></div><div id="setMsgS"></div>
         <h2 style="margin-top:22px">تارگت پیش‌فرض سالن ۳</h2><p class="sub">تارگت هر شیفت برای جت پرینتر، دوخت و کارتن‌گذاری (به عدد، برای همه‌ی محصولات). در گزارش عملکرد، هر روزی که در تب «تارگت روزانه» برای آن ایستگاه و شیفت برنامه‌ای زده نشده باشد، همین عدد تارگت شیفت حساب می‌شود.</p>
         <div class="tw"><table><thead id="h3tHead"></thead><tbody id="h3tRows"></tbody></table></div>
@@ -421,7 +453,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.22-c";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.22-d";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -438,7 +470,7 @@ function seed(){return{products:BAKED.products,users:BAKED.users,shifts:BAKED.sh
 let DB;try{DB=JSON.parse(localStorage.getItem(KEY));}catch(e){DB=null;}
 // فرم تازه‌تر (اسامی جدید) ثبت‌های قبلیِ آپلودنشده را پاک نمی‌کند
 if(!DB||!DB.asm)DB=seed();else if(DB.bakedAt!==BAKED.at)Object.assign(DB,{products:BAKED.products,users:BAKED.users,shifts:BAKED.shifts,bakedAt:BAKED.at,session:BAKED.me});
-if(!DB.units)DB.units={};if(!DB.h3t)DB.h3t={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
+if(!DB.units)DB.units={};if(!DB.rework)DB.rework=[];if(!DB.rwReasons)DB.rwReasons=["ضایعات قطعه","پیچش اشتباه","مسدودی","ناقصی قطعه"];if(!DB.h3t)DB.h3t={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 const ok=o=>Object.assign({ok:true},o||{});
 // لاگ فعالیت: فقط اضافه می‌شود، هیچ‌وقت ویرایش یا حذف نمی‌شود
@@ -505,7 +537,11 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
     if(r.result==="ریجکت"){const a=DB.asm.find(x=>x.lot===r.lot&&x.asm===r.asm);add(a?D(a):r.date,"مونتاژ",r.asm,a?shiftOf(a,r.asm):defShift(r.asm),-r.packs,per,r.packs,r.code);}});
   DB.coil.forEach(r=>{const d=D(r),per=perOf(r),sh=shiftOf(r,r.coil),rj=r.result==="ریجکت";
     // ریجکت QC پیچش از عملکرد پیچش‌کار کم می‌شود؛ QC کار هم بابت بازرسی عملکرد می‌گیرد
-    add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});return m;}
+    add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});
+  // دوباره‌کاری سالن ۲: از عملکرد فرد مقصر در روز تولید کم و به عملکرد انجام‌دهنده در روز دوباره‌کاری اضافه می‌شود
+  const mk=(date,st,name,sh,f,v)=>{const o=m[date+"|"+st+"|"+name+"|"+sh];if(o)o[f]=(o[f]||0)+v;};
+  (DB.rework||[]).forEach(r=>{if(r.hall!=="2")return;const per=+r.per||1,n=+r.packs||0,fsh=r.fshift||defShift(r.fp);add(r.fday,r.fst,r.fp,fsh,-n,per,0,r.code);mk(r.fday,r.fst,r.fp,fsh,"rw",n*per);
+    if(r.dp&&r.dst){add(r.day,r.dst,r.dp,r.shift,n,per,0,r.code);mk(r.day,r.dst,r.dp,r.shift,"rwd",n*per);}});return m;}
 // تارگت هر نفر به تفکیک ایستگاه و محصول: تارگت همان محصول، وگرنه تارگت «همه‌ی محصولات» ایستگاه
 // لات نامبر باید با کد همان محصول شروع شود (میکروست ← MIS…، ست سرم ← IS…). بلندترین کد منطبق حساب می‌شود.
 const lotCodeOf=lot=>{const L=String(lot||"").trim().toUpperCase();return(DB.products||[]).map(x=>String(x.code||"").toUpperCase()).filter(c=>c&&L.startsWith(c)).sort((a,b)=>b.length-a.length)[0]||"";};
@@ -513,6 +549,7 @@ const lotCodeErr=(p,lot)=>{const L=normLot(lot);if(!L)return"";const c=lotCodeOf
 const PT=d=>(DB.pTargets||{})[d]||{},PL=d=>(DB.plans||{})[d]||{};
 // مراحل موجودی لات (سالن ۲ ← سالن ۳) و مقدار هر ثبت به «عدد»
 const BST=[["asm","مونتاژ"],["test","تست و QC"],["coil","پیچش"],["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]],BKN=Object.fromEntries(BST);
+const RWK={"مونتاژ":"asm","تست":"test","پیچش":"coil","جت پرینتر":"jet","دوخت":"sew"},RWH={"2":["مونتاژ","تست","پیچش"],"3":["جت پرینتر","دوخت","کارتن‌گذاری"]};
 const bpcs=(k,r)=>["jet","sew","carton"].includes(k)?(+r.packs||0):(+r.packs||0)*perOf(r);
 const bperson=(k,r)=>({asm:r.asm,test:r.test,coil:r.coil,jet:r.op,sew:r.op,carton:""})[k]||"";
 function balSteps(l){const steps=BST.map(([k,name])=>{const R=DB[k].filter(r=>r.lot===l);const rej=R.filter(r=>r.result==="ریجکت").reduce((s,r)=>s+bpcs(k,r),0),all=R.reduce((s,r)=>s+bpcs(k,r),0);
@@ -531,7 +568,7 @@ function actuals(from,to,code,qs,basis){const m={};Object.values(actualsS(from,t
 const mainShift=(a,n)=>{if(a&&Object.keys(a.sh).length)return Object.entries(a.sh).sort((x,y)=>y[1]-x[1])[0][0];return defShift(n);};
 
 const H={
-  meta(){const u=me();return ok({ver:SERVER_VER,prodDay:prodDay(),wdDays:[0,1,2,3,4,5,6,7].map(i=>addDays(prodDay(),-i)),serverUrl:typeof SERVER_URL_==="function"?SERVER_URL_():"",pwaUrl:typeof PWA_URL==="string"?PWA_URL:"",today:today(),weekday:weekday(today()),user:u?{name:u.name,role:u.role,st:ustations(u),shift:u.shift||"",perms:permsOf(u)}:null,perms:PERMS,roles:ROLES,stations:STATIONS,
+  meta(){const u=me();return ok({ver:SERVER_VER,prodDay:prodDay(),rwReasons:DB.rwReasons,wdDays:[0,1,2,3,4,5,6,7].map(i=>addDays(prodDay(),-i)),serverUrl:typeof SERVER_URL_==="function"?SERVER_URL_():"",pwaUrl:typeof PWA_URL==="string"?PWA_URL:"",today:today(),weekday:weekday(today()),user:u?{name:u.name,role:u.role,st:ustations(u),shift:u.shift||"",perms:permsOf(u)}:null,perms:PERMS,roles:ROLES,stations:STATIONS,
     users:DB.users.filter(x=>active(x)&&canLogin(x)).map(x=>x.name),people:Object.fromEntries(STATIONS.map(s=>[s,DB.users.filter(x=>has(x,s)&&active(x)).map(x=>x.name)])),ops:DB.users.filter(x=>active(x)&&x.role==="اپراتور").map(x=>x.name),
     products:DB.products.filter(active),shifts:DB.shifts,shiftOf:Object.fromEntries(DB.users.filter(u=>u.shift).map(u=>[u.name,u.shift]))});},
   login(d){const un=String(d.username||"").trim().toLowerCase();const u=DB.users.find(x=>active(x)&&canLogin(x)&&String(x.username||"").toLowerCase()===un);if(!u||!u.pin||String(u.pin)!==String(d.pin||"")){logEv(u?u.name:(un||"—"),"ورود ناموفق",u?"رمز اشتباه":`نام کاربری «${un}» پیدا نشد`);save();return err("نام یا رمز درست نیست.",401);}DB.session=u.name;logEv(u.name,"ورود","");save();return ok();},
@@ -609,6 +646,33 @@ const H={
     return err("ثبت پیدا نشد.");});},
   // موجودی بین مراحل هر لات (۶ مرحله): انجام‌شده، ریجکت، و مانده‌ی بین هر دو مرحله — به عدد
   // مغایرت بین دو مرحله‌ی یک لات: همه‌ی ثبت‌های دو مرحله + تفکیک به نفر و «تعداد در هر بسته» + ثبت‌های مشکوک
+  // ---------- دوباره‌کاری ----------
+  // پیشنهاد فرد مقصر: کسانی که در آن ایستگاه روی این لات کار کرده‌اند (با سریال، دقیقاً همان نفر) و روز کاری‌شان
+  reworkFind(d){return needP("entry",u=>{const st=String(d.st||""),k=RWK[st];if(!k)return err("ایستگاه معتبر نیست.");const lot=normLot(d.lot);if(!lot)return ok({cands:[]});const ser=serKey(d.serial||"");
+    let R=DB[k].filter(r=>r.lot===lot),exact=false;
+    if(ser){if(k==="coil"||k==="sew"){const S=R.filter(r=>serKey(r.serial)===ser);if(S.length){R=S;exact=true;}}
+      else if(k==="asm"||k==="test"){const c=DB.coil.find(r=>r.lot===lot&&serKey(r.serial)===ser);if(c){const nm=k==="asm"?c.asm:c.test;const S=R.filter(r=>bperson(k,r)===nm);if(S.length){R=S;exact=true;}}}}
+    const m={};R.forEach(r=>{const name=bperson(k,r);if(!name)return;const day=recDay(r),key=name+"|"+day;const o=m[key]||(m[key]={name,day,shift:r.shift||"",n:0});o.n++;});
+    const i0=lotInfo(lot)||{},p=prod(i0.code);return ok({cands:Object.values(m).sort((a,b)=>a.day<b.day?1:a.day>b.day?-1:b.n-a.n),exact,code:p?p.code:"",pack:p?(+p.pack||0):0});});},
+  addRework(d){return needP("entry",u=>{const hall=String(d.hall)==="3"?"3":"2",ST=RWH[hall];
+    const e=check(d,[["shift","شیفت"],["code","محصول"],["lot","لات نامبر"],["fst","ایستگاه مقصر"],["fp","فرد مقصر"],["fday","روز کاری مقصر","date"],["packs",hall==="2"?"تعداد بسته":"تعداد","int"],["reason","علت"]]);if(e)return e;
+    if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");
+    if(hall==="2"){const le=lotCodeErr(p,d.lot);if(le)return err(le);}
+    if(!RWK[d.fst]||!ST.includes(d.fst))return err("ایستگاه مقصر معتبر نیست.");
+    const dp=String(d.dp||"").trim(),dst=String(d.dst||"").trim();if(dp&&!ST.includes(dst))return err("ایستگاه انجام‌دهنده را انتخاب کنید.");if(dp&&dp===String(d.fp).trim()&&dst===d.fst)return err("فرد مقصر و انجام‌دهنده در یک ایستگاه یکی هستند؛ بررسی کنید.");
+    const per=hall==="2"?parseInt(d.per,10):1;if(!(per>0))return err("تعداد در هر بسته را وارد کنید.");const n=parseInt(d.packs,10);if(!(n>0))return err("تعداد باید بیشتر از صفر باشد.");
+    const td=prodDay(),day=normDate(d.day)||td;if(day>td)return err("روز کاری دوباره‌کاری نمی‌تواند بعد از امروز باشد.");if(!isMgr(u)&&day<addDays(td,-7))return err("آمارگیر فقط تا ۷ روز گذشته را می‌تواند ثبت کند.");
+    const fday=normDate(d.fday);if(fday>day)return err("روز کاری مقصر نمی‌تواند بعد از روز دوباره‌کاری باشد.");
+    const reason=String(d.reason).trim(),note=String(d.note||"").trim();if(reason==="سایر"&&!note)return err("برای علت «سایر» توضیح بنویسید.");
+    const ids=(DB.rework||[]).map(r=>+r.id||0);const r={id:(ids.length?Math.max(...ids):0)+1,t:nowJ(),day,hall,shift:d.shift,code:p.code,product:p.name,lot:normLot(d.lot),serial:String(d.serial||"").trim().toUpperCase(),fst:d.fst,fp:String(d.fp).trim(),fday,fshift:DB.shifts.includes(d.fshift)?d.fshift:"",dst:dp?dst:"",dp,packs:n,per,pcs:n*per,reason,note,by:u.name};
+    DB.rework.push(r);logEv(u.name,"ثبت دوباره‌کاری",`سالن ${hall==="2"?"۲":"۳"} · لات ${r.lot}${r.serial?" · سریال "+r.serial:""} · ${r.pcs} عدد · مقصر: ${r.fp} (${r.fst}، روز ${fday}) · انجام‌دهنده: ${dp?dp+" ("+dst+")":"—"} · علت: ${reason}${note?" — "+note:""}`);save();return ok({rec:r});});},
+  reworkList(d){return needP("entry",u=>{const day=normDate(d.day)||prodDay();return ok({day,rows:(DB.rework||[]).filter(r=>r.day===day&&mine(u,r)).sort((a,b)=>a.t<b.t?1:-1),all:isMgr(u)});});},
+  delRework(d){return needP("entry",u=>{const i=(DB.rework||[]).findIndex(r=>r.id===+d.id);if(i<0)return err("ثبت پیدا نشد.");const r=DB.rework[i];if(!mine(u,r))return err("فقط ثبت‌های خودتان را می‌توانید حذف کنید.",403);
+    DB.rework.splice(i,1);logEv(u.name,"حذف دوباره‌کاری",`لات ${r.lot} · ${r.pcs} عدد · مقصر ${r.fp} (${r.fst}) · ثبت اصلی: ${r.by} در ${r.t}`);save();return ok({});});},
+  reworkReport(d){return needP("report",u=>{let f=normDate(d.from)||prodDay(),t=normDate(d.to)||f;if(f>t)[f,t]=[t,f];const m={};const B=(name,st)=>m[name+"|"+st]||(m[name+"|"+st]={name,station:st,fn:0,fpcs:0,dn:0,dpcs:0,rs:{}});
+    const inR=x=>x>=f&&x<=t;const rows=(DB.rework||[]).filter(r=>inR(r.fday)||inR(r.day));
+    rows.forEach(r=>{if(inR(r.fday)){const o=B(r.fp,r.fst);o.fn++;o.fpcs+=+r.pcs||0;o.rs[r.reason]=(o.rs[r.reason]||0)+1;}if(r.dp&&inR(r.day)){const o=B(r.dp,r.dst);o.dn++;o.dpcs+=+r.pcs||0;}});
+    return ok({from:f,to:t,people:Object.values(m).map(o=>Object.assign(o,{top:Object.entries(o.rs).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+" ("+x[1]+")").slice(0,2).join("، ")})).sort((a,b)=>b.fpcs-a.fpcs||b.dpcs-a.dpcs),rows:rows.slice().sort((a,b)=>a.t<b.t?1:-1).slice(0,500)});});},
   lotDiff(d){return needP("trace",u=>{const l=normLot(d.lot),i=parseInt(d.i,10);if(!l||!(i>=1&&i<BST.length))return err("لات یا مرحله معتبر نیست.");
     const [ka,na]=BST[i-1],[kb,nb]=BST[i];const A=DB[ka].filter(r=>r.lot===l),B=DB[kb].filter(r=>r.lot===l);if(!A.length&&!B.length)return err(`لات ${l} پیدا نشد.`);
     const p=prod((lotInfo(l)||{}).code)||prod((A[0]||B[0]).code)||{};const pk=+p.pack||0;const lotPer=+((DB.asm.find(a=>a.lot===l)||{}).per)||0;
@@ -744,13 +808,14 @@ const H={
       {name:"کارتن‌گذاری",header:["زمان ثبت","شیفت","محصول","کد","تاریخ تولید","لات نامبر","تعداد","ثبت‌کننده"],rows:DB.carton.map(r=>[r.t,r.shift||"",r.product,r.code,r.date,r.lot,+r.packs||0,r.by])},
       {name:"رهگیری لات",header:["لات نامبر","محصول","تاریخ تولید","مونتاژشده (بسته)","تایید QC","ریجکت","پیچش‌شده","در انتظار پیچش"],
         rows:lots.map(l=>{const i=lotInfo(l);return[l,(prod(i.code)||{}).name||i.code,i.date,i.asmPacks,i.okPacks,i.rejPacks,i.coilPacks,Math.max(0,i.okPacks-i.coilPacks)];})},
+      {name:"دوباره‌کاری",header:["زمان ثبت","روز کاری دوباره‌کاری","سالن","شیفت","محصول","لات نامبر","سریال","ایستگاه مقصر","فرد مقصر","روز کاری مقصر","ایستگاه انجام‌دهنده","انجام‌دهنده","تعداد","در هر بسته","به عدد","علت","توضیح","ثبت‌کننده"],rows:(DB.rework||[]).map(r=>[r.t,r.day,r.hall,r.shift,r.product,r.lot,r.serial,r.fst,r.fp,r.fday,r.dst,r.dp,r.packs,r.per,r.pcs,r.reason,r.note,r.by])},
       {name:"تارگت روزانه",header:["تاریخ","روز","نام","ایستگاه","واحد","تارگت"],rows:tg},
       {name:"برنامه تولید",header:["تاریخ","روز","ایستگاه","محصول","شیفت","واحد","برنامه","عملکرد","انحراف","درصد تحقق"],pct:[9],rows:plRows()},
       {name:"لاگ فعالیت",header:["تاریخ","ساعت","کاربر","عملیات","جزئیات"],rows:DB.events.slice().reverse().map(e=>[e.t.slice(0,10),e.t.slice(11),e.by,e.action,e.detail])},
       {name:"محصولات",header:["کد","نام محصول","تعداد در بسته","فعال"],rows:DB.products.map(p=>[p.code,p.name,+p.pack,p.active])},
       {name:"کاربران",header:["نام","نقش","نام کاربری","دسترسی‌ها","شیفت پیش‌فرض","ایستگاه‌ها (واحد و تارگت پیش‌فرض)","فعال"],
         rows:DB.users.map(u=>[u.name,u.role,u.username||"",canLogin(u)?permsOf(u).map(k=>PERMS.find(x=>x[0]===k)[1]).join("، "):"",u.shift||"",ustations(u).map(st=>`${st}: ${stOf(u)[st]||"—"} ${unitOf(u.name,st,today())}`).join(" · "),u.active])}]});});},
-  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts,h3t:DB.h3t||{},h3:H3K.map(x=>x[1])}));},
+  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts,rwReasons:DB.rwReasons,h3t:DB.h3t||{},h3:H3K.map(x=>x[1])}));},
   saveSettings(d){return needP("set",()=>{const seen=new Set(),prods=[];for(const p of d.products){const code=String(p.code||"").trim().toUpperCase(),name=String(p.name||"").trim();if(!code&&!name)continue;
       if(!/^[A-Z0-9]{1,10}$/.test(code))return err(`کد «${code||"خالی"}» باید ۱ تا ۱۰ حرف انگلیسی یا عدد باشد (بدون فاصله).`);if(seen.has(code))return err(`کد «${code}» تکراری است.`);if(!name)return err(`نام محصول کد ${code} خالی است.`);seen.add(code);const rp=parseInt(p.rep,10);if(String(p.rep||"").trim()&&!(rp>=1&&rp<=20))return err(`تکرار مجاز لات/سریال برای ${code} باید عددی بین ۱ تا ۲۰ باشد (یا خالی).`);prods.push({code,name,pack:parseInt(p.pack,10)||100,rep:rp>=1?rp:"",active:p.active==="خیر"?"خیر":"بله"});}
     const shifts=[...new Set(String(d.shifts||"").split(/[،,]/).map(x=>x.trim()).filter(Boolean))];if(!shifts.length)return err("حداقل یک شیفت تعریف کنید.");
@@ -761,7 +826,7 @@ const H={
         if(String(x.pin||"").length<4)return err(`رمز عبور «${name}» باید حداقل ۴ کاراکتر باشد.`);}
       const perms=login?PERM_KEYS.filter(k=>(x.perms||[]).includes(k)):[];seenU.add(name);const sh=String(x.shift||"").trim();if(sh&&!shifts.includes(sh))return err(`شیفت «${name}» در فهرست شیفت‌ها نیست.`);users.push({name,role:x.role,username:login?un:"",perms,shift:sh,pin:login?String(x.pin):"",st,active:x.active==="خیر"?"خیر":"بله"});}
     if(!users.some(x=>x.role==="مدیر"&&x.active==="بله"))return err("حداقل یک کاربر فعال با نقش «مدیر» لازم است.");if(!users.some(x=>x.active==="بله"&&x.perms.includes("set")))return err("حداقل یک کاربر فعال باید به تب «تنظیمات» دسترسی داشته باشد، وگرنه کسی نمی‌تواند تنظیمات را باز کند.");let h3t=null;if(d.h3t){h3t={};for(const[k,v]of Object.entries(d.h3t)){const t=String(v??"").trim();if(t==="")continue;const[st,sh]=k.split("|");if(!H3K.some(x=>x[1]===st))continue;const n=Number(t);if(!(n>=0))return err(`تارگت ${st} شیفت ${sh} باید عدد باشد.`);h3t[k]=String(n);}}
-    DB.products=prods;DB.users=users;DB.shifts=shifts;if(h3t)DB.h3t=h3t;logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
+    DB.products=prods;DB.users=users;DB.shifts=shifts;if(h3t)DB.h3t=h3t;if(d.rwReasons!==undefined){const rl=[...new Set(String(d.rwReasons).split(/[،,]/).map(x=>x.trim()).filter(Boolean))].filter(x=>x!=="سایر");if(rl.length)DB.rwReasons=rl;}logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
     const noSt=users.filter(x=>x.role==="اپراتور"&&x.active==="بله"&&!Object.keys(x.st).length).map(x=>x.name);
     return ok({warn:noSt.length?`${noSt.length} اپراتور هنوز ایستگاهی ندارند؛ در فرم‌ها زیر «سایر اپراتورها» قابل انتخاب‌اند، ولی تا تیک ایستگاه و تارگتشان را نزنید، تارگت و انحراف ندارند.`:""});});}
 };
@@ -792,7 +857,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.22-c";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.22-d";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -807,15 +872,16 @@ $("#lPin").addEventListener("keydown",e=>{if(e.key==="Enter")$("#lGo").click();}
 // خروج: هر چه از کاربر قبلی روی صفحه مانده پاک می‌شود
 $("#logout").onclick=async()=>{await api("logout");["#recent","#qOut","#rOut","#lgRows","#gRows","#lRows","#uRows","#pRows"].forEach(x=>{const e=$(x);if(e)e.innerHTML="";});$$("[id$=_msg]").forEach(x=>x.innerHTML="");current="entry";boot();};
 
-const TABS=[["entry","ثبت تولید"],["trace","رهگیری لات"],["report","گزارش عملکرد"],["target","تارگت روزانه"],["log","لاگ فعالیت"],["set","تنظیمات"]];
+const TABS=[["entry","ثبت تولید"],["rework","دوباره‌کاری"],["trace","رهگیری لات"],["report","گزارش عملکرد"],["target","تارگت روزانه"],["log","لاگ فعالیت"],["set","تنظیمات"]];
 const can=p=>!!ME&&ME.perms.includes(p);
+const ONLINE=!!document.getElementById("cOff");   // فرم آفلاین و اپ گوشی تب دوباره‌کاری ندارند
 let current="entry";
 function showApp(){verCheck();$("#loginView").hidden=true;$("#appView").hidden=false;$("#whoName").textContent=`${ME.name} · ${ME.role}`;
-  const mine=TABS.filter(t=>can(t[0]));if(!mine.length){$("#tabs").innerHTML="";$$(".view").forEach(x=>x.hidden=true);return;}$("#tabs").innerHTML=mine.map(t=>`<button class="tab" role="tab" data-v="${t[0]}">${t[1]}</button>`).join("");
+  const mine=TABS.filter(t=>t[0]==="rework"?(can("entry")&&ONLINE):can(t[0]));if(!mine.length){$("#tabs").innerHTML="";$$(".view").forEach(x=>x.hidden=true);return;}$("#tabs").innerHTML=mine.map(t=>`<button class="tab" role="tab" data-v="${t[0]}">${t[1]}</button>`).join("");
   $("#xlsx").hidden=!can("xlsx");if(!mine.some(t=>t[0]===current))current="entry";open(current);}
 $("#xlsx").onclick=exportXlsx;
 $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(b)open(b.dataset.v);};
-function open(v){current=v;$$(".view").forEach(x=>x.hidden=x.id!=="v-"+v);$$(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===v));({entry:initEntry,trace:()=>($("#trBal").hidden?$("#q"):$("#bq")).focus(),report:initReport,target:initTarget,log:initLog,set:initSet})[v]();}
+function open(v){current=v;$$(".view").forEach(x=>x.hidden=x.id!=="v-"+v);$$(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===v));({entry:initEntry,rework:initRework,trace:()=>($("#trBal").hidden?$("#q"):$("#bq")).focus(),report:initReport,target:initTarget,log:initLog,set:initSet})[v]();}
 
 /* ---------- فرم‌ها ---------- */
 const FORMS={a:{card:"#cAsm",fn:"addAsm",ok:"مونتاژ ثبت شد",label:"ثبت مونتاژ",st:["مونتاژ"]},t:{card:"#cTest",fn:"addTest",ok:"تست و QC ثبت شد",label:"ثبت تست و QC",st:["تست","QC"]},c:{card:"#cCoil",fn:"addCoil",ok:"پیچش ثبت شد",label:"ثبت پیچش",st:["پیچش"]},j:{card:"#cJet",fn:"addJet",ok:"جت پرینتر ثبت شد",label:"ثبت جت پرینتر",st:["جت پرینتر"]},w:{card:"#cSew",fn:"addSew",ok:"دوخت ثبت شد",label:"ثبت دوخت",st:["دوخت"]},x:{card:"#cCarton",fn:"addCarton",ok:"کارتن‌گذاری ثبت شد",label:"ثبت کارتن‌گذاری",st:["کارتن‌گذاری"]}};
@@ -1005,6 +1071,60 @@ $("#recPrev").onclick=()=>loadRecent($("#recDate").dataset.prev);$("#recNext").o
 $("#recent").onclick=async e=>{const op=e.target.closest("[data-open]");if(op){const[k,l]=op.dataset.open.split("|");REC.kind=k;REC.view="all";REC.q=l;$("#recQ").value=l;REC.n=30;renderRecent();return;}const ed=e.target.closest("[data-edit]");if(ed){const x=RECS.find(y=>y.id===+ed.dataset.edit&&y.kind===ed.dataset.kind);if(x)startEdit(x);return;}const b=e.target.closest("[data-del]");if(!b)return;if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="برای حذف دوباره بزنید";return;}
   const r=await api("remove",{id:+b.dataset.del,kind:b.dataset.kind});if(!r.ok){b.textContent=r.error;return;}loadRecent();};
 
+
+/* ---------- دوباره‌کاری ---------- */
+let RWH_="2",RWC=[];const RWST={"2":["مونتاژ","تست","پیچش"],"3":["جت پرینتر","دوخت","کارتن‌گذاری"]},RWF={"2":["مونتاژ","تست","پیچش"],"3":["جت پرینتر","دوخت"]};
+const RWROLE={"مونتاژ":"مونتاژ","تست":"تست","پیچش":"پیچش","جت پرینتر":"جت پرینتر","دوخت":"دوخت","کارتن‌گذاری":"دوخت"};
+const RWN=["امروز","دیروز","۲ روز پیش","۳ روز پیش","۴ روز پیش","۵ روز پیش","۶ روز پیش","۷ روز پیش"];
+function initRework(){const days=META.wdDays||[META.prodDay];const dOpt=days.map((d,i)=>`<option value="${esc(d)}">${RWN[i]||""} · ${esc(d)}</option>`).join("");
+  ["#rw_day","#rwListDay"].forEach(id=>{const k=$(id).value;$(id).innerHTML=dOpt;if(k&&days.includes(k))$(id).value=k;});
+  const k1=$("#rw_shift").value;$("#rw_shift").innerHTML=`<option value="">انتخاب کنید</option>`+META.shifts.map(x=>`<option>${esc(x)}</option>`).join("");if(k1)$("#rw_shift").value=k1;
+  const k2=$("#rw_code").value;$("#rw_code").innerHTML=prodOpts();if(k2)$("#rw_code").value=k2;
+  const k3=$("#rw_reason").value;$("#rw_reason").innerHTML=`<option value="">انتخاب کنید</option>`+(META.rwReasons||[]).map(x=>`<option>${esc(x)}</option>`).join("")+`<option>سایر</option>`;if(k3)$("#rw_reason").value=k3;
+  rwHall(RWH_,true);rwLoad();}
+function rwHall(h,keep){RWH_=h;$$("#rwHall button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.h===h)));
+  const fs=$("#rw_fst").value,ds=$("#rw_dst").value;$("#rw_fst").innerHTML=`<option value="">انتخاب کنید</option>`+RWF[h].map(x=>`<option>${esc(x)}</option>`).join("");$("#rw_dst").innerHTML=`<option value="">—</option>`+RWST[h].map(x=>`<option>${esc(x)}</option>`).join("");
+  if(keep&&RWF[h].includes(fs))$("#rw_fst").value=fs;if(keep&&RWST[h].includes(ds))$("#rw_dst").value=ds;
+  $("#rw_perBox").hidden=h==="3";$("#rw_packsL").innerHTML=(h==="3"?"تعداد (عدد)":"تعداد بسته")+'<span class="req">*</span>';rwPeople();rwFind();}
+function rwPeople(){const dst=$("#rw_dst").value,k=$("#rw_dp").value;$("#rw_dp").innerHTML=dst?peopleOpts(RWROLE[dst]||"مونتاژ",false):`<option value="">— (ابتدا ایستگاه را انتخاب کنید)</option>`;if(k&&[...$("#rw_dp").options].some(o=>o.value===k))$("#rw_dp").value=k;}
+$("#rwHall").onclick=e=>{const b=e.target.closest("[data-h]");if(b)rwHall(b.dataset.h,false);};
+$("#rw_dst").addEventListener("change",rwPeople);
+$("#rw_reason").addEventListener("change",()=>{const o=$("#rw_reason").value==="سایر";$("#rw_noteH").textContent=o?"(الزامی برای «سایر»)":"(اختیاری)";});
+let RWT=null;["#rw_lot","#rw_serial"].forEach(id=>$(id).addEventListener("input",()=>{clearTimeout(RWT);RWT=setTimeout(rwFind,350);}));$("#rw_fst").addEventListener("change",rwFind);
+async function rwFind(){const st=$("#rw_fst").value,lot=$("#rw_lot").value.trim();const keep=$("#rw_fp").value;
+  if(!st||lot.length<3){RWC=[];$("#rw_fp").innerHTML=st?peopleOpts(RWROLE[st],false):`<option value="">ابتدا ایستگاه مقصر را انتخاب کنید</option>`;if(keep&&[...$("#rw_fp").options].some(o=>o.value===keep))$("#rw_fp").value=keep;$("#rw_fpHint").textContent="";return;}
+  const r=await api("reworkFind",{st,lot,serial:$("#rw_serial").value.trim()});if(!r.ok){$("#rw_fpHint").textContent=r.error;return;}RWC=r.cands;
+  if(r.code&&!$("#rw_code").value)$("#rw_code").value=r.code;if(RWH_==="2"&&r.pack&&!$("#rw_per").value)$("#rw_per").value=r.pack;
+  const names=[...new Set(RWC.map(c=>c.name))];const o=n=>`<option>${esc(n)}</option>`;const others=(META.ops||[]).filter(n=>!names.includes(n));
+  $("#rw_fp").innerHTML=`<option value="">انتخاب کنید</option>`+(names.length?`<optgroup label="${r.exact?"همین سریال":"روی این لات در "+esc(st)}">${names.map(o).join("")}</optgroup>`:"")+`<optgroup label="سایر اپراتورها">${others.map(o).join("")}</optgroup>`;
+  if(names.length===1)$("#rw_fp").value=names[0];else if(keep&&[...$("#rw_fp").options].some(x=>x.value===keep))$("#rw_fp").value=keep;
+  $("#rw_fpHint").textContent=names.length?(r.exact?"با سریال پیدا شد.":`${fa(names.length)} نفر در ${st} روی این لات کار کرده‌اند.`):"در این ایستگاه ثبتی برای این لات پیدا نشد؛ نفر را از فهرست انتخاب کنید.";rwFpDays();}
+// روز تولید: روزهایی که فرد مقصر روی این لات کار کرده
+function rwFpDays(){const n=$("#rw_fp").value,C=RWC.filter(c=>c.name===n);let dl=$("#rw_fdayList");if(!dl){dl=document.createElement("datalist");dl.id="rw_fdayList";document.body.appendChild(dl);$("#rw_fday").setAttribute("list","rw_fdayList");}
+  dl.innerHTML=C.map(c=>`<option value="${esc(c.day)}">${esc(c.shift||"")} · ${fa(c.n)} ثبت</option>`).join("");if(C.length===1||(C.length&&!$("#rw_fday").value)){$("#rw_fday").value=C[0].day;$("#rw_fday").dataset.sh=C[0].shift||"";}
+  $("#rw_fpHint").textContent=C.length>1?`این نفر در ${fa(C.length)} روز روی این لات کار کرده (${C.map(c=>c.day).join("، ")})؛ روز درست را انتخاب کنید.`:$("#rw_fpHint").textContent;}
+$("#rw_fp").addEventListener("change",()=>{$("#rw_fday").value="";rwFpDays();});
+$("#rw_go").onclick=async()=>{const v=id=>$(id).value.trim();const d={hall:RWH_,day:v("#rw_day"),shift:v("#rw_shift"),code:v("#rw_code"),lot:v("#rw_lot"),serial:v("#rw_serial"),fst:v("#rw_fst"),fp:v("#rw_fp"),fday:v("#rw_fday"),dst:v("#rw_dst"),dp:v("#rw_dp"),packs:v("#rw_packs"),per:RWH_==="2"?v("#rw_per"):"1",reason:v("#rw_reason"),note:v("#rw_note")};
+  const c=RWC.find(x=>x.name===d.fp&&x.day===d.fday);d.fshift=c?c.shift:"";
+  const miss=[["shift","شیفت"],["code","محصول"],["lot","لات نامبر"],["fst","ایستگاه مقصر"],["fp","فرد مقصر"],["fday","روز کاری مقصر"],["packs","تعداد"],["reason","علت"]].filter(([k])=>!d[k]).map(x=>x[1]);if(RWH_==="2"&&!d.per)miss.push("تعداد در هر بسته");
+  if(miss.length)return msg("#rw_msg","این موارد را کامل کنید: "+miss.join("، "),"bad");$("#rw_go").disabled=true;const r=await api("addRework",d);$("#rw_go").disabled=false;if(!r.ok)return msg("#rw_msg",esc(r.error),"bad");
+  msg("#rw_msg",`دوباره‌کاری ثبت شد: لات <span class="mono">${esc(r.rec.lot)}</span> · ${fa(r.rec.pcs)} عدد · ${RWH_==="2"?`از عملکرد <b>${esc(r.rec.fp)}</b> (${esc(r.rec.fst)}، روز ${esc(r.rec.fday)}) کم شد${r.rec.dp?` و به عملکرد <b>${esc(r.rec.dp)}</b> (${esc(r.rec.dst)}، روز ${esc(r.rec.day)}) اضافه شد`:""}`:"ثبت شد (سالن ۳ عملکرد فردی ندارد؛ در گزارش «دوباره‌کاری هر نفر» می‌آید)"}.`,"ok");
+  ["#rw_serial","#rw_packs","#rw_note"].forEach(id=>$(id).value="");$("#rwListDay").value=r.rec.day;rwLoad();};
+$("#rwListDay").addEventListener("change",rwLoad);
+async function rwLoad(){const r=await api("reworkList",{day:$("#rwListDay").value});if(!r.ok)return msg("#rwList",esc(r.error),"bad");
+  if(!r.rows.length)return msg("#rwList",`در روز کاری ${esc(r.day)} دوباره‌کاری ${r.all?"":"توسط شما "}ثبت نشده است.`,"ok");
+  $("#rwList").innerHTML=`<div class="tw"><table><thead><tr><th>ساعت ثبت</th><th>سالن</th><th>شیفت</th><th>لات / سریال</th><th>محصول</th><th>مقصر (ایستگاه · روز)</th><th>انجام‌دهنده</th><th>به عدد</th><th>علت</th><th>ثبت‌کننده</th><th></th></tr></thead><tbody>
+  ${r.rows.map(x=>`<tr><td class="mono">${esc(x.t.slice(11))}</td><td>${x.hall==="3"?"۳":"۲"}</td><td>${esc(x.shift)}</td><td class="mono">${esc(x.lot)}${x.serial?` #${esc(x.serial)}`:""}</td><td>${esc(x.product)}</td><td><b>${esc(x.fp)}</b> <span class="hint">${esc(x.fst)} · ${esc(x.fday)}</span></td><td>${x.dp?`${esc(x.dp)} <span class="hint">${esc(x.dst)}</span>`:"—"}</td><td class="n"><b>${fa(x.pcs)}</b>${x.hall==="2"?` <span class="hint">(${fa(x.packs)}×${fa(x.per)})</span>`:""}</td><td>${esc(x.reason)}${x.note?` <span class="hint">${esc(x.note)}</span>`:""}</td><td>${esc(x.by)}</td><td><button class="btn sm" data-rwdel="${x.id}">حذف</button></td></tr>`).join("")}</tbody></table></div>`;}
+$("#rwList").addEventListener("click",async e=>{const b=e.target.closest("[data-rwdel]");if(!b)return;if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="برای حذف دوباره بزنید";return;}const r=await api("delRework",{id:+b.dataset.rwdel});if(!r.ok){b.textContent=r.error;return;}rwLoad();});
+// گزارش «دوباره‌کاری هر نفر»
+async function drawRework(){$("#rOut").innerHTML='<p class="hint">در حال خواندن…</p>';const r=await api("reworkReport",{from:$("#rFrom").value,to:$("#rTo").value});if(!r.ok)return msg("#rOut",esc(r.error),"bad");
+  if(!r.people.length){$("#rOut").innerHTML=`<div class="msg ok" style="margin-top:12px">از ${esc(r.from)} تا ${esc(r.to)} دوباره‌کاری ثبت نشده است.</div>`;return;}
+  $("#rOut").innerHTML=`<h3>دوباره‌کاری هر نفر در هر ایستگاه <span class="hint">(${esc(r.from)} تا ${esc(r.to)})</span></h3><p class="hint" style="margin:4px 0 0">«مقصر» بر اساس روز تولید و «انجام‌دهنده» بر اساس روز دوباره‌کاری. در سالن ۲ همین اعداد در «عملکرد بر اساس فرد» از عملکرد مقصر کم و به انجام‌دهنده اضافه شده است.</p>
+  <div class="tw"><table><thead><tr><th>نام</th><th>ایستگاه</th><th class="n">دفعات مقصر</th><th class="n">کسرشده (عدد)</th><th>بیشترین علت</th><th class="n">دفعات انجام</th><th class="n">اضافه‌شده (عدد)</th></tr></thead><tbody>
+  ${r.people.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.station)}</td><td class="n">${p.fn?fa(p.fn):"—"}</td><td class="n" style="color:${p.fpcs?"var(--bad)":""}">${p.fpcs?"−"+fa(p.fpcs):"—"}</td><td>${esc(p.top||"")}</td><td class="n">${p.dn?fa(p.dn):"—"}</td><td class="n" style="color:${p.dpcs?"var(--ok)":""}">${p.dpcs?"+"+fa(p.dpcs):"—"}</td></tr>`).join("")}</tbody></table></div>
+  <h3 style="margin-top:16px">همه‌ی ثبت‌های دوباره‌کاری این بازه (${fa(r.rows.length)})</h3>
+  <div class="tw"><table><thead><tr><th>زمان ثبت</th><th>روز دوباره‌کاری</th><th>سالن</th><th>لات / سریال</th><th>مقصر</th><th>روز تولید</th><th>انجام‌دهنده</th><th class="n">به عدد</th><th>علت</th><th>ثبت‌کننده</th></tr></thead><tbody>
+  ${r.rows.map(x=>`<tr><td class="mono">${esc(x.t)}</td><td class="mono">${esc(x.day)}</td><td>${x.hall==="3"?"۳":"۲"}</td><td class="mono">${esc(x.lot)}${x.serial?" #"+esc(x.serial):""}</td><td>${esc(x.fp)} <span class="hint">${esc(x.fst)}</span></td><td class="mono">${esc(x.fday)}</td><td>${x.dp?esc(x.dp)+` <span class="hint">${esc(x.dst)}</span>`:"—"}</td><td class="n">${fa(x.pcs)}</td><td>${esc(x.reason)}${x.note?` <span class="hint">${esc(x.note)}</span>`:""}</td><td>${esc(x.by)}</td></tr>`).join("")}</tbody></table></div>`;}
 /* ---------- ثبت آفلاین ---------- */
 // اپ گوشی: لینک نصب و لینک سامانه برای اولین اتصال
 function pwaInfo(){const el=$("#pwaInfo");if(!el)return;const s=META.serverUrl,pw=META.pwaUrl;
@@ -1109,7 +1229,7 @@ $("#rGo").onclick=async()=>{const r=await api("report",{from:$("#rFrom").value,t
   $("#rWho").innerHTML=`<option value="">همه‌ی افراد</option>`+names.map(n=>`<option${n===keep?" selected":""}>${esc(n)}</option>`).join("");drawReport();};
 $("#rWho").onchange=()=>REP&&drawReport();
 $("#rProd").onchange=()=>$("#rGo").click();
-$("#rView").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;RVIEW=b.dataset.view;$$("#rView .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));$("#rWho").closest(".f").hidden=RVIEW==="s";REP&&drawReport();if(RVIEW==="h"&&!$("#rWho").value)$("#rWho").focus();};
+$("#rView").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;RVIEW=b.dataset.view;$$("#rView .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));$("#rWho").closest(".f").hidden=RVIEW==="s"||RVIEW==="w";REP&&drawReport();if(RVIEW==="h"&&!$("#rWho").value)$("#rWho").focus();};
 const prodNote=r=>r.product?`<div class="msg" style="margin-top:12px">فقط محصول «${esc(r.productName)}»: عملکرد، تارگت و برنامه‌ی همین محصول.</div>`:"";
 // گزارش با ایستگاه‌های QC تیک‌نخورده حذف‌شده
 function repV(){const v=new Set([...rStn(),...H3ST]),f=x=>v.has(x.station);return Object.assign({},REP,{people:REP.people.filter(f),daily:REP.daily.filter(f),shiftSum:REP.shiftSum.filter(f),shiftDaily:REP.shiftDaily.filter(f)});}
@@ -1147,7 +1267,7 @@ function drawHistory(){const who=$("#rWho").value;const r=repV();
     ${V.map(x=>`<tr><td class="mono">${esc(x.date)}</td><td class="hint">${esc(x.wd||"")}</td><td><span class="pill p-acc">${esc(x.station)}</span></td><td>${esc(x.shift||"—")}</td><td class="n">${x.target===null?"—":fa(x.target)+' <span class="hint">'+x.unit+"</span>"}</td><td class="n"><b>${fa(x.packs)}</b> <span class="hint">${x.unit}</span></td><td class="n">${x.rej?fa(x.rej):""}</td><td class="n">${x.dev===null?"—":devCell(x.dev)}</td><td>${x.pct===null?"":fa(x.pct)+"٪"}</td></tr>`).join("")}</tbody></table></div>`
     :`<p class="hint">در این بازه برای ${esc(who)} عملکرد یا تارگتی ثبت نشده است.</p>`}`;
   const hb=$("#hSt");if(hb)hb.onclick=e=>{const b=e.target.closest("[data-hs]");if(!b)return;HST=b.dataset.hs;drawHistory();};}
-function drawReport(){if(RVIEW==="h")return drawHistory();if(RVIEW==="s")return drawShift();const r=repV(),who=$("#rWho").value,mineP=r.people.filter(p=>!who||p.name===who);
+function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return drawHistory();if(RVIEW==="s")return drawShift();const r=repV(),who=$("#rWho").value,mineP=r.people.filter(p=>!who||p.name===who);
   // کارت هر ایستگاه: عملکرد در برابر تارگت
   const kp=rStn().map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const us=[...new Set([...L0.map(p=>p.unit),...(who?[]:Object.keys(r.plan||{}).filter(k=>k.split("|")[0]===s).map(k=>k.split("|")[1]))])];if(!us.length)us.push("عدد");
     return us.map(u=>{const L=L0.filter(p=>p.unit===u);const pl=who?undefined:(r.plan||{})[s+"|"+u];const t=pl!==undefined?pl:L.reduce((a,p)=>a+(p.target||0),0),a=L.reduce((x,p)=>x+p.packs,0);
@@ -1244,7 +1364,7 @@ $("#lgGo").onclick=loadLog;$("#lgBy").onchange=loadLog;$("#lgAct").onchange=load
 
 /* ---------- تنظیمات ---------- */
 let SET=null;
-async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();drawH3t();}
+async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();drawH3t();$("#sRwR").value=(r.rwReasons||[]).join("، ");}
 function drawH3t(){const sh=SET.shifts||[],H=SET.h3t||{};$("#h3tHead").innerHTML=`<tr><th>ایستگاه</th>${sh.map(x=>`<th>شیفت ${esc(x)}</th>`).join("")}</tr>`;
   $("#h3tRows").innerHTML=(SET.h3||["جت پرینتر","دوخت","کارتن‌گذاری"]).map(st=>`<tr><td><b>${esc(st)}</b></td>${sh.map(x=>`<td><input type="number" min="0" data-h3t="${esc(st)}|${esc(x)}" value="${esc(H[st+"|"+x]??"")}" placeholder="—" style="width:120px"></td>`).join("")}</tr>`).join("");}
 const readH3t=()=>{const o={};$$("#h3tRows [data-h3t]").forEach(i=>o[i.dataset.h3t]=i.value);return o;};
@@ -1271,7 +1391,7 @@ $("#uAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.spli
 $("#lAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean);SET.users.push({name:"",role:"آمار",username:"",pin:"",perms:["entry","trace","report"],st:{},active:"بله"});drawSet();};
 // دکمه‌ی ذخیره زیر هر جدول؛ همه‌ی تنظیمات با هم ذخیره می‌شود و پیام کنار همان دکمه می‌آید
 $$(".setSaveBtn").forEach(b=>b.onclick=async()=>{const m="#"+b.dataset.msg;$$(".setSaveBtn").forEach(x=>x.disabled=true);
-  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value,h3t:readH3t()});$$(".setSaveBtn").forEach(x=>x.disabled=false);
+  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value,h3t:readH3t(),rwReasons:$("#sRwR").value});$$(".setSaveBtn").forEach(x=>x.disabled=false);
   if(!r.ok)return msg(m,esc(r.error),"bad");META=await api("meta");ME=META.user;showApp();if(current==="set"){["#setMsgP","#setMsgS","#setMsgL","#setMsg"].forEach(x=>msg(x,""));msg(m,"تنظیمات ذخیره شد."+(r.warn?"<br>"+esc(r.warn):""),r.warn?"warn":"ok");}});
 // جستجو و فیلتر اپراتورها (ردیف‌های پنهان هم ذخیره می‌شوند)
 function uFilter(){const q=$("#uSearch").value.trim().replace(/ي/g,"ی").replace(/ك/g,"ک"),f=$("#uFilter").value;let n=0,all=0;
