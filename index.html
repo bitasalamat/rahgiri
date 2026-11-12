@@ -416,7 +416,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.22-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.22-b";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -502,6 +502,9 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
     // ریجکت QC پیچش از عملکرد پیچش‌کار کم می‌شود؛ QC کار هم بابت بازرسی عملکرد می‌گیرد
     add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});return m;}
 // تارگت هر نفر به تفکیک ایستگاه و محصول: تارگت همان محصول، وگرنه تارگت «همه‌ی محصولات» ایستگاه
+// لات نامبر باید با کد همان محصول شروع شود (میکروست ← MIS…، ست سرم ← IS…). بلندترین کد منطبق حساب می‌شود.
+const lotCodeOf=lot=>{const L=String(lot||"").trim().toUpperCase();return(DB.products||[]).map(x=>String(x.code||"").toUpperCase()).filter(c=>c&&L.startsWith(c)).sort((a,b)=>b.length-a.length)[0]||"";};
+const lotCodeErr=(p,lot)=>{const L=normLot(lot);if(!L)return"";const c=lotCodeOf(L);if(c===String(p.code).toUpperCase())return"";return`لات نامبر ${L} با محصول «${p.name}» نمی‌خواند؛ لات این محصول باید با «${p.code}» شروع شود${c?` (این لات مال «${(prod(c)||{}).name||c}» است)`:""}.`;};
 const PT=d=>(DB.pTargets||{})[d]||{},PL=d=>(DB.plans||{})[d]||{};
 // مراحل موجودی لات (سالن ۲ ← سالن ۳) و مقدار هر ثبت به «عدد»
 const BST=[["asm","مونتاژ"],["test","تست و QC"],["coil","پیچش"],["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]],BKN=Object.fromEntries(BST);
@@ -530,17 +533,17 @@ const H={
   logout(){const u=me();if(u)logEv(u.name,"خروج","");DB.session=null;save();return ok();},
   lotInfo(d){return needP("entry",()=>ok({info:lotInfo(d.lot)}));},
   addAsm(d){return needSt(["مونتاژ"],u=>{const e=check(d,[["code","محصول"],["date","تاریخ تولید","date"],["lot","لات نامبر"],["asm","مونتاژکار"],["packs","تعداد بسته","int"],["per","تعداد در هر بسته","int"],["qc","QC کار"],["result","نتیجه‌ی QC"],["shift","شیفت"]]);if(e)return e;if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه‌ی QC را انتخاب کنید.");
-    const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");if(!isUser(d.asm,"مونتاژ"))return err("مونتاژکار در فهرست نیست.");if(!isUser(d.qc,"QC"))return err("QC کار در فهرست نیست.");
+    const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");{const le=lotCodeErr(p,d.lot);if(le)return err(le);}if(!isUser(d.asm,"مونتاژ"))return err("مونتاژکار در فهرست نیست.");if(!isUser(d.qc,"QC"))return err("QC کار در فهرست نیست.");
     if(!admin(u)&&d.asm!==u.name)return err("فقط به نام خودتان می‌توانید ثبت کنید.",403);
     const r={id:DB.nextId++,t:nowJ(),code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),asm:d.asm,packs:parseInt(d.packs,10),per:parseInt(d.per,10),qc:d.qc,result:d.result,reason:String(d.reason||"").trim(),shift:d.shift,by:u.name};DB.asm.push(r);logEv(u.name,"ثبت مونتاژ",`لات ${r.lot} · ${r.product} · ${r.packs} بسته × ${r.per} · QC: ${r.qc||"—"} ${r.result||""}${r.reason?" ("+r.reason+")":""} · مونتاژکار: ${r.asm} · شیفت ${r.shift}`);save();return ok({rec:r});});},
   addTest(d){return needSt(["تست","QC"],u=>{const e=check(d,[["lot","لات نامبر"],["code","محصول"],["date","تاریخ تولید","date"],["asm","مونتاژکار"],["test","تست‌کار"],["qc","QC کار"],["packs","تعداد بسته","int"],["per","تعداد در هر بسته","int"],["result","نتیجه‌ی QC"],["shift","شیفت"]]);if(e)return e;if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");
-    if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه‌ی QC را انتخاب کنید.");const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");
+    if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه‌ی QC را انتخاب کنید.");const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");{const le=lotCodeErr(p,d.lot);if(le)return err(le);}
     if(!isUser(d.test,"تست")||!isUser(d.qc,"QC")||!isUser(d.asm,"مونتاژ"))return err("یکی از افراد انتخاب‌شده در فهرست نیست.");
     if(!admin(u)&&d.test!==u.name&&d.qc!==u.name)return err("نام خودتان باید در تست‌کار یا QC کار باشد.",403);
     const info=lotInfo(d.lot);const r={id:DB.nextId++,t:nowJ(),code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),asm:d.asm,test:d.test,qc:d.qc,shift:d.shift,packs:parseInt(d.packs,10),per:parseInt(d.per,10)||+info.per||p.pack,result:d.result,reason:String(d.reason||"").trim(),by:u.name};
     DB.test.push(r);logEv(u.name,"ثبت تست و QC",`لات ${r.lot} · ${r.packs} بسته · ${r.result}${r.reason?" ("+r.reason+")":""} · تست: ${r.test} · QC: ${r.qc} · شیفت ${r.shift}`);save();return ok({rec:r,warn:info.asmPacks?"":"برای این لات هنوز ثبت مونتاژی نیست؛ ثبت انجام شد ولی لات را بررسی کنید."});});},
   addCoil(d){return needSt(["پیچش"],u=>{const e=check(d,[["lot","لات نامبر"],["code","محصول"],["date","تاریخ تولید","date"],["asm","مونتاژکار"],["test","تست‌کار"],["serial","سریال تولید"],["coil","پیچش‌کار"],["qc","QC کار"],["per","تعداد در هر بسته","int"],["shift","شیفت"],["result","نتیجه‌ی QC"]]);if(e)return e;if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه‌ی QC را انتخاب کنید.");if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");
-    const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");if(!isUser(d.coil,"پیچش"))return err("پیچش‌کار در فهرست نیست.");if(!isUser(d.qc,"QC"))return err("QC کار در فهرست نیست.");
+    const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");{const le=lotCodeErr(p,d.lot);if(le)return err(le);}if(!isUser(d.coil,"پیچش"))return err("پیچش‌کار در فهرست نیست.");if(!isUser(d.qc,"QC"))return err("QC کار در فهرست نیست.");
     if(!admin(u)&&d.coil!==u.name)return err("فقط به نام خودتان می‌توانید ثبت کنید.",403);
     const lot=normLot(d.lot),serial=String(d.serial).trim().toUpperCase();{const lim=repOf(p.code)||1,sk=x=>{const v=String(x||"").toUpperCase();return/^\d+$/.test(v)?String(+v):v;},n=DB.coil.filter(r=>r.lot===lot&&sk(r.serial)===sk(serial)).length;if(n>=lim)return err(lim===1?`سریال ${serial} برای لات ${lot} قبلاً ثبت شده است.`:`سریال ${serial} لات ${lot} ${n} بار ثبت شده؛ برای ${p.name} حداکثر ${lim} بار مجاز است.`);}
     const info=lotInfo(d.lot);const packs=1;
@@ -609,7 +612,7 @@ const H={
       if(!H3&&pk&&per!==pk)fl.push(`تعداد در هر بسته ${per} است (پیش‌فرض محصول ${pk})`);
       if(!H3&&lotPer&&k!=="asm"&&per!==lotPer&&per!==pk)fl.push(`تعداد در هر بسته با مونتاژ همین لات (${lotPer}) فرق دارد`);
       if(r.editedAt)fl.push(`ویرایش‌شده توسط ${r.editedBy} در ${r.editedAt}`);
-      return{kind:BKN[k],k,id:r.id,t:r.t,shift:r.shift||"",person:bperson(k,r),asm:r.asm||"",test:r.test||"",serial:r.serial||"",packs:+r.packs||0,per:H3?"":per,pcs,result:r.result||"",reason:r.reason||"",by:r.by||"",fl};};
+      return{kind:BKN[k],k,id:r.id,t:r.t,day:workDay(r.t),shift:r.shift||"",person:bperson(k,r),asm:r.asm||"",test:r.test||"",serial:r.serial||"",packs:+r.packs||0,per:H3?"":per,pcs,result:r.result||"",reason:r.reason||"",by:r.by||"",fl};};
     const RA=A.map(r=>mk(ka,r)),RB=B.map(r=>mk(kb,r));
     // ثبت‌های تکراری احتمالی: همان مرحله، همان فرد، همان تعداد، با فاصله‌ی کمتر از ۱۰ دقیقه
     [RA,RB].forEach(R=>R.forEach((x,j)=>R.forEach((y,k2)=>{if(k2<=j)return;const[da,ma]=mins(x.t),[db,mb]=mins(y.t);
@@ -780,7 +783,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.22-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.22-b";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -909,7 +912,10 @@ async function autofill(k){const lot=$("#"+k+"_lot").value.trim();if(lot.length<
 // پایه‌ی لات خودکار است؛ آمارگیر می‌تواند ادامه‌اش را دستی اضافه کند (مثلاً SS261104-2). با عوض شدن محصول یا تاریخ فقط پایه عوض می‌شود و ادامه می‌ماند.
 function genLot(k){const el=$("#"+k+"_lot"),cur=el.value.trim().toUpperCase(),old=el.dataset.base||"";
   const v=Backend.lotFor($("#"+k+"_code").value,$("#"+k+"_date").value);if(!v)return;
-  let suffix="";if(cur){if(old&&cur.startsWith(old))suffix=cur.slice(old.length);else return;}   // لاتی که از اول دستی نوشته شده دست نمی‌خورد
+  let suffix="";if(cur){if(old&&cur.startsWith(old))suffix=cur.slice(old.length);else{
+    // لات دستی یا در حال ویرایش: اگر محصول عوض شد، فقط حروف ابتدای لات به کد محصول جدید تغییر می‌کند
+    const nc=String($("#"+k+"_code").value||"").toUpperCase(),oc=(META.products||[]).map(x=>String(x.code||"").toUpperCase()).filter(c=>c&&cur.startsWith(c)).sort((a,b)=>b.length-a.length)[0]||"";
+    if(nc&&oc&&oc!==nc){el.value=nc+cur.slice(oc.length);el.classList.add("auto");el.classList.remove("invalid");validate(k);}return;}}
   const nv=v+suffix;el.dataset.base=v;if(nv===cur)return;el.value=nv;el.classList.add("auto");el.classList.remove("invalid");validate(k);if(k!=="a")autofill(k);}
 Object.keys(FORMS).forEach(k=>{$("#"+k+"_code").addEventListener("change",()=>{setPer(k);validate(k);});$("#"+k+"_code").addEventListener("change",()=>genLot(k));$("#"+k+"_date").addEventListener("input",()=>genLot(k));$("#"+k+"_date").addEventListener("change",()=>genLot(k));
   // کلیک روی لات: نشانگر به آخر لات می‌رود تا ادامه‌اش راحت تایپ شود
@@ -947,7 +953,8 @@ function recHead(){const C=recCols(),key=REC.view+"|"+HALL+"|"+RECS.length+"|"+R
 function recArrows(){$$("#recentHead [data-sort]").forEach(b=>{const on=b.dataset.sort===REC.sort.k;b.classList.toggle("on",on);b.querySelector("i").textContent=on?(REC.sort.dir>0?"▲":"▼"):"⇅";});}
 const recFilt=x=>Object.entries(REC.f).every(([k,v])=>{if(!v)return true;if(k==="shift")return(x.shift||"")===v;const t=RCOLS.all.concat(RCOLS.sum).find(c=>c[0]===k);const val=recVal(x,k);return t&&t[2]==="sel"?val===v:val.toUpperCase().includes(v.trim().toUpperCase());});
 const recCmp=(a,b)=>{const n=typeof a==="number"&&typeof b==="number";const r=n?a-b:String(a).localeCompare(String(b),"fa");return r*REC.sort.dir;};
-async function loadRecent(date){offRefresh();const r=await api("recent",{date:date||$("#recDate").value||META.prodDay||META.today});if(!r.ok)return;RECS=r.rows;REC.head="";REC.date=r.date;$("#recDate").value=r.date;$("#recDate").dataset.prev=r.prev;$("#recDate").dataset.next=r.next;
+let LRSEQ=0;
+async function loadRecent(date){offRefresh();const my=++LRSEQ;const r=await api("recent",{date:date||$("#recDate").value||META.prodDay||META.today});if(my!==LRSEQ)return;if(!r.ok)return;RECS=r.rows;REC.head="";REC.date=r.date;$("#recDate").value=r.date;$("#recDate").dataset.prev=r.prev;$("#recDate").dataset.next=r.next;
   $("#recentTitle").textContent=(r.date===META.today?"ثبت‌های امروز":"آرشیو ثبت‌های "+r.weekday+" "+r.date)+(r.all?"":" (فقط ثبت‌های من)");
   const c=k=>r.rows.filter(x=>x.kind===k).length;
   $("#recentSub").textContent=`${fa(r.rows.length)} ثبت — سالن ۲: مونتاژ ${fa(c("مونتاژ"))} · تست و QC ${fa(c("تست و QC"))} · پیچش ${fa(c("پیچش"))} — سالن ۳: جت پرینتر ${fa(c("جت پرینتر"))} · دوخت ${fa(c("دوخت"))} · کارتن‌گذاری ${fa(c("کارتن‌گذاری"))}${r.all?" (همه‌ی آمارگیرها)":" — ویرایش و حذف فقط برای ثبت‌های خودتان."}`;
@@ -1030,11 +1037,18 @@ function diffHtml(r){const w=r.wait,abs=Math.abs(w);
   const grp=r.groups.map(g=>{const bad=g.rows.filter(x=>x.diff);return`<div class="dfgrp"><h4>${esc(g.title)}</h4><div class="tw"><table><thead><tr><th>${esc(g.title.replace("به تفکیک ",""))}</th><th>تاییدشده‌ی ${esc(r.a.name)}</th><th>ثبت ${esc(r.b.name)}</th><th>اختلاف</th></tr></thead><tbody>
     ${g.rows.map(x=>`<tr${x.diff<0?' class="dfneg"':x.diff>0?' class="dfpos"':""}><td>${esc(x.key)}</td><td class="n">${fa(x.a)}</td><td class="n">${fa(x.b)}</td><td class="n">${x.diff?`<b>${x.diff<0?"−":"+"}${fa(Math.abs(x.diff))}</b> <span class="hint">${x.diff<0?"بیشتر ثبت شده":"مانده"}</span>`:'<span class="hint">—</span>'}</td></tr>`).join("")}</tbody></table></div>${bad.length?"":'<p class="hint" style="margin:4px 0 0">در این تفکیک اختلافی نیست.</p>'}</div>`;}).join("");
   const sus=r.recs.filter(x=>x.fl.length);
-  const recs=`<h4>همه‌ی ثبت‌های این دو مرحله (${fa(r.recs.length)} ثبت)${sus.length?` · <span style="color:var(--bad)">${fa(sus.length)} ثبت مشکوک</span>`:""}</h4><div class="tw"><table><thead><tr><th>مرحله</th><th>زمان ثبت</th><th>شیفت</th><th>فرد</th><th>سریال</th><th>تعداد</th><th>در هر بسته</th><th>به عدد</th><th>نتیجه</th><th>ثبت‌کننده</th><th>توضیح</th></tr></thead><tbody>
+  const recs=`<h4>همه‌ی ثبت‌های این دو مرحله (${fa(r.recs.length)} ثبت)${sus.length?` · <span style="color:var(--bad)">${fa(sus.length)} ثبت مشکوک</span>`:""}</h4><div class="tw"><table><thead><tr><th>مرحله</th><th>زمان ثبت</th><th>شیفت</th><th>فرد</th><th>سریال</th><th>تعداد</th><th>در هر بسته</th><th>به عدد</th><th>نتیجه</th><th>ثبت‌کننده</th><th>توضیح</th>${can("entry")?"<th></th>":""}</tr></thead><tbody>
     ${r.recs.map(x=>`<tr${x.fl.length?' class="dfsus"':""}><td><span class="pill p-acc">${esc(x.kind)}</span></td><td class="mono">${esc(x.t)}</td><td>${esc(x.shift)}</td><td>${esc(x.person||"—")}</td><td class="mono">${esc(x.serial||"")}</td><td class="n">${fa(x.packs)}</td><td class="n">${x.per===""?"—":fa(x.per)}</td><td class="n"><b>${fa(x.pcs)}</b></td>
-      <td>${x.result?`<span class="pill ${x.result==="تایید"?"p-ok":"p-bad"}">${esc(x.result)}</span>`:""}</td><td>${esc(x.by)}</td><td class="hint" style="color:${x.fl.length?"var(--bad)":""}">${x.fl.map(esc).join("<br>")}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint" style="margin:6px 0 0">برای اصلاح، در «ثبت تولید» آرشیو همان روز را باز کنید و ثبت را ویرایش یا حذف کنید. ثبت‌هایی که زمینه‌ی قرمز دارند ارزش بررسی دارند.</p>`;
+      <td>${x.result?`<span class="pill ${x.result==="تایید"?"p-ok":"p-bad"}">${esc(x.result)}</span>`:""}</td><td>${esc(x.by)}</td><td class="hint" style="color:${x.fl.length?"var(--bad)":""}">${x.fl.map(esc).join("<br>")}</td>${can("entry")?`<td><button class="btn sm" data-goedit="${x.k}|${x.id}|${esc(x.day)}" title="باز کردن همین ثبت در «ثبت تولید» برای ویرایش">ویرایش</button></td>`:""}</tr>`).join("")}</tbody></table></div>
+    <p class="hint" style="margin:6px 0 0">دکمه‌ی «ویرایش» همان ثبت را در «ثبت تولید» (سالن و روز کاری خودش) باز می‌کند تا اصلاح یا حذفش کنید. ثبت‌هایی که زمینه‌ی قرمز دارند ارزش بررسی دارند.</p>`;
   return`<div class="dfbox">${head}${sus.length?`<div class="msg warn" style="margin-top:8px"><b>${fa(sus.length)} ثبت مشکوک:</b> ${sus.slice(0,6).map(x=>`${esc(x.kind)} ${esc(x.t.slice(11))} (${esc(x.by)}): ${esc(x.fl[0])}`).join(" · ")}${sus.length>6?" …":""}</div>`:""}<div class="dfgrid">${grp}</div>${recs}</div>`;}
+// از جزئیات مغایرت مستقیم به ویرایش همان ثبت
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-goedit]");if(!b)return;const[k,id,day]=b.dataset.goedit.split("|");b.disabled=true;const KN_={asm:"مونتاژ",test:"تست و QC",coil:"پیچش",jet:"جت پرینتر",sew:"دوخت",carton:"کارتن‌گذاری"};
+  const t=$('.tab[data-v="entry"]');if(t)t.click();const fk=KIND2K[KN_[k]],card=FORMS[fk];if(card&&$(card.card).dataset.hall!==HALL)setHall($(card.card).dataset.hall);
+  await loadRecent(day);REC.f={};REC.q="";if($("#recQ"))$("#recQ").value="";REC.kind="همه";REC.view="all";REC.n=Math.max(30,RECS.length);REC.head="";renderRecent();b.disabled=false;
+  const x=RECS.find(y=>y.id===+id&&y.kind===KN_[k]);if(!x){msg("#"+fk+"_msg","این ثبت در آرشیو روز "+esc(day)+" پیدا نشد (ممکن است ثبت شخص دیگری باشد یا حذف شده باشد).","warn");$(card.card).scrollIntoView({behavior:"smooth",block:"start"});return;}
+  const ed=$(`#recent [data-edit="${x.id}"][data-kind="${x.kind}"]`);if(ed){const tr=ed.closest("tr");tr.classList.add("flash");setTimeout(()=>tr.classList.remove("flash"),4000);}
+  startEdit(x);});
 // فهرست مغایرت‌ها
 $("#mGo").onclick=async()=>{const r=await api("mismatches",{from:$("#mFrom").value,to:$("#mTo").value,all:$("#mAll").checked});if(!r.ok)return msg("#mOut",esc(r.error),"bad");$("#mFrom").value=r.from;$("#mTo").value=r.to;
   if(!r.rows.length)return msg("#mOut",`در ${fa(r.lots)} لاتی که از ${esc(r.from)} تا ${esc(r.to)} ثبت داشته‌اند، مغایرتی (بیشتر ثبت شدن) پیدا نشد.`,"ok");
