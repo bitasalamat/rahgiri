@@ -63,6 +63,10 @@ input.ltr{direction:ltr;text-align:left;font-family:Consolas,"Vazirmatn",monospa
 .msg{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:14px}
 .msg.ok{background:var(--ok-soft);color:var(--ok)}.msg.bad{background:var(--bad-soft);color:var(--bad)}.msg.warn{background:var(--warn-soft);color:var(--warn)}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+/* جدول‌های فهرستی: اسکرول جدا با عنوان ثابت (عنوان ستون‌ها و فیلترها بالا می‌مانند) */
+.tw{overflow:auto;max-height:min(72vh,680px);overscroll-behavior:contain}
+.tw thead{position:sticky;top:0;z-index:4}.tw thead th{background:var(--soft);box-shadow:inset 0 -1px 0 var(--line)}
+.stbox .tw,.dfgrp .tw{max-height:none}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 th{background:var(--soft);font-size:12.5px;color:var(--ink2)}
@@ -412,7 +416,7 @@ const today=()=>jStr(new Date());
 // روز تولید: تا ۶ صبح هنوز روز تولیدِ دیروز است (شیفت شب)
 // روز کاریِ یک زمان ثبت: ثبت‌های قبل از ۶ صبح مال روز کاری قبل‌اند
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
-const SERVER_VER="1405.08.21-e";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.22-a";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -776,7 +780,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.21-e";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.22-a";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
