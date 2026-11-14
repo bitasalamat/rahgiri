@@ -413,6 +413,14 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
         <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgP">ذخیره‌ی تنظیمات</button></div><div id="setMsgP"></div>
         <h2 style="margin-top:22px">شیفت‌ها</h2><p class="sub">نام شیفت‌ها را با ویرگول جدا کنید (مثلاً: صبح، عصر، شب). در فرم‌های ثبت از همین فهرست انتخاب می‌شود.</p>
         <div class="f" style="max-width:420px"><input id="sShifts" aria-label="شیفت‌ها"></div>
+        <h2 style="margin-top:22px">چرخش هفتگی شیفت</h2><p class="sub">اگر روشن باشد، هر هفته در روز انتخاب‌شده (از ۶ صبح) شیفت همه‌ی افرادی که در جدول اپراتورها شیفت دارند خودکار یک شیفت جابه‌جا می‌شود و در لاگ فعالیت ثبت می‌شود. ثبت‌های قبلی تغییر نمی‌کنند. ترتیب شیفت‌ها همان ترتیب بالاست.</p>
+        <div class="row" style="align-items:center">
+          <label style="display:flex;gap:6px;align-items:center;font-weight:700"><input type="checkbox" id="rotOn" style="width:auto"> چرخش خودکار روشن</label>
+          <div class="f"><label for="rotDay">روز چرخش</label><select id="rotDay" style="width:130px"><option>شنبه</option><option>یکشنبه</option><option>دوشنبه</option><option>سه‌شنبه</option><option>چهارشنبه</option><option>پنجشنبه</option><option>جمعه</option></select></div>
+          <div class="f"><label for="rotDir">جهت</label><select id="rotDir" style="width:200px"><option value="prev">به شیفت قبل</option><option value="next">به شیفت بعد</option></select></div>
+          <button class="btn sm" id="rotNow" type="button">چرخش همین حالا (یک بار)</button>
+        </div>
+        <p class="hint" id="rotPrev" style="margin:6px 0 0"></p>
         <h2 style="margin-top:22px">علت‌های دوباره‌کاری</h2><p class="sub">با ویرگول جدا کنید. گزینه‌ی «سایر» همیشه هست.</p>
         <div class="f" style="max-width:640px"><input id="sRwR" aria-label="علت‌های دوباره‌کاری"></div>
         <div class="actions"><button class="btn p setSaveBtn" data-msg="setMsgS">ذخیره‌ی تنظیمات</button></div><div id="setMsgS"></div>
@@ -453,7 +461,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.22-d";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.24-a";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -470,7 +478,7 @@ function seed(){return{products:BAKED.products,users:BAKED.users,shifts:BAKED.sh
 let DB;try{DB=JSON.parse(localStorage.getItem(KEY));}catch(e){DB=null;}
 // فرم تازه‌تر (اسامی جدید) ثبت‌های قبلیِ آپلودنشده را پاک نمی‌کند
 if(!DB||!DB.asm)DB=seed();else if(DB.bakedAt!==BAKED.at)Object.assign(DB,{products:BAKED.products,users:BAKED.users,shifts:BAKED.shifts,bakedAt:BAKED.at,session:BAKED.me});
-if(!DB.units)DB.units={};if(!DB.rework)DB.rework=[];if(!DB.rwReasons)DB.rwReasons=["ضایعات قطعه","پیچش اشتباه","مسدودی","ناقصی قطعه"];if(!DB.h3t)DB.h3t={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
+if(!DB.units)DB.units={};if(!DB.rot)DB.rot={};if(!DB.rework)DB.rework=[];if(!DB.rwReasons)DB.rwReasons=["ضایعات قطعه","پیچش اشتباه","مسدودی","ناقصی قطعه"];if(!DB.h3t)DB.h3t={};if(!DB.jet)DB.jet=[];if(!DB.sew)DB.sew=[];if(!DB.carton)DB.carton=[];if(!DB.stTargets)DB.stTargets={};if(!DB.pTargets)DB.pTargets={};if(!DB.plans)DB.plans={};if(!DB.events)DB.events=[];if(!DB.shifts)DB.shifts=["صبح","عصر"];
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 const ok=o=>Object.assign({ok:true},o||{});
 // لاگ فعالیت: فقط اضافه می‌شود، هیچ‌وقت ویرایش یا حذف نمی‌شود
@@ -526,6 +534,18 @@ function setUnit(key,date,u){const log=DB.units[key]||(DB.units[key]={});const[n
   // حذف تغییرهای بی‌اثر
   Object.keys(log).sort().forEach(d=>{const v=log[d];delete log[d];if(unitOf(n,st,d)!==v)log[d]=v;});if(!Object.keys(log).length)delete DB.units[key];}
 const amt=(a,u)=>a?(u==="عدد"?a.pcs:a.packs):0,ramt=(a,u)=>a?(u==="عدد"?a.rejPcs:a.rej):0;
+// ---------- چرخش هفتگی شیفت ----------
+// هر هفته در روز تعیین‌شده (پیش‌فرض شنبه، از ۶ صبح) همه‌ی افرادی که شیفت دارند یک شیفت جابه‌جا می‌شوند.
+const jDays=(a,b)=>{const g=x=>{const[y,m,d]=x.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);return Date.UTC(gy,gm-1,gd);};return Math.round((g(b)-g(a))/864e5);};
+const rotStart=(d,day)=>{let x=d;for(let i=0;i<7&&weekday(x)!==day;i++)x=addDays(x,-1);return x;};
+const rotMap=(dir,times)=>{const S=DB.shifts,n=S.length,m={};S.forEach((s,i)=>m[s]=S[(((i+(dir==="next"?1:-1)*times)%n)+n)%n]);return m;};
+function rotateShifts(times,dir,by,why){if(!times||DB.shifts.length<2)return 0;const m=rotMap(dir,times);let c=0;
+  DB.users=DB.users.map(u=>{if(!u.shift||!(u.shift in m))return u;c++;return Object.assign({},u,{shift:m[u.shift]});});
+  DB.rot=Object.assign({},DB.rot||{},{n:((DB.rot||{}).n||0)+1});
+  logEv(by,"چرخش شیفت",`${why} · ${c} نفر · ${Object.entries(m).map(([a,b])=>a+" ← "+b).join("، ").replace(/(\S+) ← (\S+)/g,"$1 → $2")}`);return c;}
+function autoRotate(){const R=DB.rot||{};if(!R.on)return;const day=R.day||"شنبه",s=rotStart(prodDay(),day);
+  if(!R.last){DB.rot=Object.assign({},R,{last:s});return;}if(R.last>=s)return;const w=Math.max(1,Math.round(jDays(R.last,s)/7));
+  rotateShifts(w,R.dir||"prev","سامانه (خودکار)",`چرخش خودکار هفتگی (${day} ${s}${w>1?` · ${w} هفته`:""})`);DB.rot=Object.assign({},DB.rot,{last:s});}
 const defShift=n=>{const u=DB.users.find(x=>x.name===n);return(u&&u.shift)||DB.shifts[0]||"—";};
 const shiftOf=(r,n)=>r.shift||defShift(n);
 // عملکرد به تفکیک «روز|ایستگاه|نفر|شیفت». روز کاری از ۶ صبح تا ۶ صبح فردا است: مونتاژ با تاریخ تولید، تست و پیچش با روز کاریِ زمان ثبت (اگر تست/پیچش یک لات به روز بعد برود، در عملکرد همان روز می‌آید)
@@ -571,7 +591,7 @@ const H={
   meta(){const u=me();return ok({ver:SERVER_VER,prodDay:prodDay(),rwReasons:DB.rwReasons,wdDays:[0,1,2,3,4,5,6,7].map(i=>addDays(prodDay(),-i)),serverUrl:typeof SERVER_URL_==="function"?SERVER_URL_():"",pwaUrl:typeof PWA_URL==="string"?PWA_URL:"",today:today(),weekday:weekday(today()),user:u?{name:u.name,role:u.role,st:ustations(u),shift:u.shift||"",perms:permsOf(u)}:null,perms:PERMS,roles:ROLES,stations:STATIONS,
     users:DB.users.filter(x=>active(x)&&canLogin(x)).map(x=>x.name),people:Object.fromEntries(STATIONS.map(s=>[s,DB.users.filter(x=>has(x,s)&&active(x)).map(x=>x.name)])),ops:DB.users.filter(x=>active(x)&&x.role==="اپراتور").map(x=>x.name),
     products:DB.products.filter(active),shifts:DB.shifts,shiftOf:Object.fromEntries(DB.users.filter(u=>u.shift).map(u=>[u.name,u.shift]))});},
-  login(d){const un=String(d.username||"").trim().toLowerCase();const u=DB.users.find(x=>active(x)&&canLogin(x)&&String(x.username||"").toLowerCase()===un);if(!u||!u.pin||String(u.pin)!==String(d.pin||"")){logEv(u?u.name:(un||"—"),"ورود ناموفق",u?"رمز اشتباه":`نام کاربری «${un}» پیدا نشد`);save();return err("نام یا رمز درست نیست.",401);}DB.session=u.name;logEv(u.name,"ورود","");save();return ok();},
+  login(d){try{autoRotate();}catch(e){}const un=String(d.username||"").trim().toLowerCase();const u=DB.users.find(x=>active(x)&&canLogin(x)&&String(x.username||"").toLowerCase()===un);if(!u||!u.pin||String(u.pin)!==String(d.pin||"")){logEv(u?u.name:(un||"—"),"ورود ناموفق",u?"رمز اشتباه":`نام کاربری «${un}» پیدا نشد`);save();return err("نام یا رمز درست نیست.",401);}DB.session=u.name;logEv(u.name,"ورود","");save();return ok();},
   logout(){const u=me();if(u)logEv(u.name,"خروج","");DB.session=null;save();return ok();},
   lotInfo(d){return needP("entry",()=>ok({info:lotInfo(d.lot)}));},
   addAsm(d){return needSt(["مونتاژ"],u=>{const e=check(d,[["code","محصول"],["date","تاریخ تولید","date"],["lot","لات نامبر"],["asm","مونتاژکار"],["packs","تعداد بسته","int"],["per","تعداد در هر بسته","int"],["qc","QC کار"],["result","نتیجه‌ی QC"],["shift","شیفت"]]);if(e)return e;if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");if(!["تایید","ریجکت"].includes(d.result))return err("نتیجه‌ی QC را انتخاب کنید.");
@@ -815,8 +835,8 @@ const H={
       {name:"محصولات",header:["کد","نام محصول","تعداد در بسته","فعال"],rows:DB.products.map(p=>[p.code,p.name,+p.pack,p.active])},
       {name:"کاربران",header:["نام","نقش","نام کاربری","دسترسی‌ها","شیفت پیش‌فرض","ایستگاه‌ها (واحد و تارگت پیش‌فرض)","فعال"],
         rows:DB.users.map(u=>[u.name,u.role,u.username||"",canLogin(u)?permsOf(u).map(k=>PERMS.find(x=>x[0]===k)[1]).join("، "):"",u.shift||"",ustations(u).map(st=>`${st}: ${stOf(u)[st]||"—"} ${unitOf(u.name,st,today())}`).join(" · "),u.active])}]});});},
-  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts,rwReasons:DB.rwReasons,h3t:DB.h3t||{},h3:H3K.map(x=>x[1])}));},
-  saveSettings(d){return needP("set",()=>{const seen=new Set(),prods=[];for(const p of d.products){const code=String(p.code||"").trim().toUpperCase(),name=String(p.name||"").trim();if(!code&&!name)continue;
+  settings(){return needP("set",()=>ok({products:DB.products,users:DB.users,shifts:DB.shifts,rwReasons:DB.rwReasons,rot:Object.assign({day:"شنبه",dir:"prev"},DB.rot||{}),rotNext:(()=>{const R=DB.rot||{},s=rotStart(prodDay(),R.day||"شنبه");return addDays(s,7);})(),h3t:DB.h3t||{},h3:H3K.map(x=>x[1])}));},
+  saveSettings(d){return needP("set",()=>{if(d.rotN!==undefined&&+d.rotN!==(+(DB.rot||{}).n||0))return err("در این فاصله شیفت‌ها چرخیده‌اند (خودکار یا توسط کاربر دیگر). صفحه‌ی تنظیمات را دوباره باز کنید تا شیفت‌های جدید را ببینید، بعد تغییرتان را دوباره بزنید.");const seen=new Set(),prods=[];for(const p of d.products){const code=String(p.code||"").trim().toUpperCase(),name=String(p.name||"").trim();if(!code&&!name)continue;
       if(!/^[A-Z0-9]{1,10}$/.test(code))return err(`کد «${code||"خالی"}» باید ۱ تا ۱۰ حرف انگلیسی یا عدد باشد (بدون فاصله).`);if(seen.has(code))return err(`کد «${code}» تکراری است.`);if(!name)return err(`نام محصول کد ${code} خالی است.`);seen.add(code);const rp=parseInt(p.rep,10);if(String(p.rep||"").trim()&&!(rp>=1&&rp<=20))return err(`تکرار مجاز لات/سریال برای ${code} باید عددی بین ۱ تا ۲۰ باشد (یا خالی).`);prods.push({code,name,pack:parseInt(p.pack,10)||100,rep:rp>=1?rp:"",active:p.active==="خیر"?"خیر":"بله"});}
     const shifts=[...new Set(String(d.shifts||"").split(/[،,]/).map(x=>x.trim()).filter(Boolean))];if(!shifts.length)return err("حداقل یک شیفت تعریف کنید.");
     const seenU=new Set(),users=[];for(const x of d.users){const name=String(x.name||"").trim();if(!name)continue;if(seenU.has(name))return err(`نام «${name}» تکراری است.`);if(!ROLES.includes(x.role))return err(`نقش «${name}» را انتخاب کنید.`);
@@ -826,12 +846,17 @@ const H={
         if(String(x.pin||"").length<4)return err(`رمز عبور «${name}» باید حداقل ۴ کاراکتر باشد.`);}
       const perms=login?PERM_KEYS.filter(k=>(x.perms||[]).includes(k)):[];seenU.add(name);const sh=String(x.shift||"").trim();if(sh&&!shifts.includes(sh))return err(`شیفت «${name}» در فهرست شیفت‌ها نیست.`);users.push({name,role:x.role,username:login?un:"",perms,shift:sh,pin:login?String(x.pin):"",st,active:x.active==="خیر"?"خیر":"بله"});}
     if(!users.some(x=>x.role==="مدیر"&&x.active==="بله"))return err("حداقل یک کاربر فعال با نقش «مدیر» لازم است.");if(!users.some(x=>x.active==="بله"&&x.perms.includes("set")))return err("حداقل یک کاربر فعال باید به تب «تنظیمات» دسترسی داشته باشد، وگرنه کسی نمی‌تواند تنظیمات را باز کند.");let h3t=null;if(d.h3t){h3t={};for(const[k,v]of Object.entries(d.h3t)){const t=String(v??"").trim();if(t==="")continue;const[st,sh]=k.split("|");if(!H3K.some(x=>x[1]===st))continue;const n=Number(t);if(!(n>=0))return err(`تارگت ${st} شیفت ${sh} باید عدد باشد.`);h3t[k]=String(n);}}
-    DB.products=prods;DB.users=users;DB.shifts=shifts;if(h3t)DB.h3t=h3t;if(d.rwReasons!==undefined){const rl=[...new Set(String(d.rwReasons).split(/[،,]/).map(x=>x.trim()).filter(Boolean))].filter(x=>x!=="سایر");if(rl.length)DB.rwReasons=rl;}logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
+    DB.products=prods;DB.users=users;DB.shifts=shifts;if(h3t)DB.h3t=h3t;
+    if(d.rot){const R0=DB.rot||{},on=!!d.rot.on,day=WEEK.includes(d.rot.day)?d.rot.day:"شنبه",dir=d.rot.dir==="next"?"next":"prev";
+      // روشن کردن یا عوض کردن روز: این هفته مبنا می‌شود و چرخش بعدی از هفته‌ی بعد است
+      const last=on?((R0.on&&R0.day===day&&R0.last)?R0.last:rotStart(prodDay(),day)):"";DB.rot={on,day,dir,last,n:+R0.n||0};
+      if(on!==!!R0.on||day!==R0.day||dir!==R0.dir)logEv(me().name,"تنظیم چرخش شیفت",on?`روشن · هر ${day} · ${dir==="next"?"به شیفت بعد":"به شیفت قبل"}`:"خاموش");}
+    if(d.rotNow)rotateShifts(1,(d.rot&&d.rot.dir)==="next"?"next":"prev",me().name,"چرخش دستی (دکمه‌ی «چرخش همین حالا»)");if(d.rwReasons!==undefined){const rl=[...new Set(String(d.rwReasons).split(/[،,]/).map(x=>x.trim()).filter(Boolean))].filter(x=>x!=="سایر");if(rl.length)DB.rwReasons=rl;}logEv(me().name,"ذخیره‌ی تنظیمات",`${prods.length} محصول · ${users.length} کاربر · شیفت‌ها: ${shifts.join("، ")}`);save();
     const noSt=users.filter(x=>x.role==="اپراتور"&&x.active==="بله"&&!Object.keys(x.st).length).map(x=>x.name);
     return ok({warn:noSt.length?`${noSt.length} اپراتور هنوز ایستگاهی ندارند؛ در فرم‌ها زیر «سایر اپراتورها» قابل انتخاب‌اند، ولی تا تیک ایستگاه و تارگتشان را نزنید، تارگت و انحراف ندارند.`:""});});}
 };
 // ثبت برای روز کاری گذشته (برگه‌ی جامانده): زمان واقعی ثبت می‌ماند و فقط «روز کاری» ثبت عوض می‌شود
-RK.forEach(k=>{const fn=RFN[k],f=H[fn];H[fn]=d=>{let wd="";if(d&&d.wd!==undefined&&String(d.wd).trim()!==""){wd=normDate(d.wd);if(!wd)return err("روز کاری معتبر نیست.");const td=prodDay();
+RK.forEach(k=>{const fn=RFN[k],f=H[fn];H[fn]=d=>{try{autoRotate();}catch(e){}let wd="";if(d&&d.wd!==undefined&&String(d.wd).trim()!==""){wd=normDate(d.wd);if(!wd)return err("روز کاری معتبر نیست.");const td=prodDay();
     if(wd>td)return err("روز کاری نمی‌تواند بعد از امروز باشد.");const u=me();if(u&&!isMgr(u)&&wd<addDays(td,-7))return err("آمارگیر فقط تا ۷ روز گذشته را می‌تواند ثبت کند؛ برای قبل‌تر به مدیر سامانه بگویید.");}
   const r=f(d);if(r&&r.ok&&r.rec&&wd){if(wd!==workDay(r.rec.t)){r.rec.wd=wd;r.day=wd;const u=me();logEv(u?u.name:"—","ثبت برای روز کاری گذشته",`${RKN[k]} · لات ${r.rec.lot} · روز کاری ${wd} (زمان واقعی ثبت ${r.rec.t})`);}else delete r.rec.wd;}return r;};});
 // هر ثبت آفلاین یک شناسه‌ی یکتا می‌گیرد تا در آپلود دوباره، تکراری ثبت نشود
@@ -857,7 +882,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.22-d";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.24-a";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1364,7 +1389,14 @@ $("#lgGo").onclick=loadLog;$("#lgBy").onchange=loadLog;$("#lgAct").onchange=load
 
 /* ---------- تنظیمات ---------- */
 let SET=null;
-async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();drawH3t();$("#sRwR").value=(r.rwReasons||[]).join("، ");}
+async function initSet(){const r=await api("settings");if(!r.ok)return msg("#setMsg",esc(r.error),"bad");SET=r;drawSet();drawH3t();rotDraw();$("#sRwR").value=(r.rwReasons||[]).join("، ");}
+let ROTNOW=false;
+function rotMapC(){const S=$("#sShifts").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean),n=S.length,dir=$("#rotDir").value;return S.map((s,i)=>s+" ← "+S[(((i+(dir==="next"?1:-1))%n)+n)%n]);}
+function rotDraw(){const R=SET.rot||{};$("#rotOn").checked=!!R.on;$("#rotDay").value=R.day||"شنبه";$("#rotDir").value=R.dir||"prev";rotPrev();}
+function rotPrev(){const m=rotMapC().map(x=>x.replace(/(.+) ← (.+)/,"$1 → $2")).join("، ");const n=allUsers().filter(u=>u.shift).length;
+  $("#rotPrev").textContent=`هر بار چرخش: ${m} · ${fa(n)} نفر شیفت دارند.`+($("#rotOn").checked&&SET.rot&&SET.rot.on?` چرخش بعدی: ${SET.rot.day||"شنبه"} ${SET.rotNext||""}`:"");}
+["#rotOn","#rotDay","#rotDir","#sShifts"].forEach(id=>$(id).addEventListener("change",rotPrev));
+$("#rotNow").onclick=()=>{if(!$("#rotNow").classList.contains("armed")){$("#rotNow").classList.add("armed");$("#rotNow").textContent="مطمئنید؟ دوباره بزنید (شیفت همه عوض می‌شود)";return;}$("#rotNow").classList.remove("armed");$("#rotNow").textContent="چرخش همین حالا (یک بار)";ROTNOW=true;$$(".setSaveBtn")[0].click();};
 function drawH3t(){const sh=SET.shifts||[],H=SET.h3t||{};$("#h3tHead").innerHTML=`<tr><th>ایستگاه</th>${sh.map(x=>`<th>شیفت ${esc(x)}</th>`).join("")}</tr>`;
   $("#h3tRows").innerHTML=(SET.h3||["جت پرینتر","دوخت","کارتن‌گذاری"]).map(st=>`<tr><td><b>${esc(st)}</b></td>${sh.map(x=>`<td><input type="number" min="0" data-h3t="${esc(st)}|${esc(x)}" value="${esc(H[st+"|"+x]??"")}" placeholder="—" style="width:120px"></td>`).join("")}</tr>`).join("");}
 const readH3t=()=>{const o={};$$("#h3tRows [data-h3t]").forEach(i=>o[i.dataset.h3t]=i.value);return o;};
@@ -1391,7 +1423,7 @@ $("#uAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.spli
 $("#lAdd").onclick=()=>{SET.users=allUsers();SET.shifts=$("#sShifts").value.split(/[،,]/).map(x=>x.trim()).filter(Boolean);SET.users.push({name:"",role:"آمار",username:"",pin:"",perms:["entry","trace","report"],st:{},active:"بله"});drawSet();};
 // دکمه‌ی ذخیره زیر هر جدول؛ همه‌ی تنظیمات با هم ذخیره می‌شود و پیام کنار همان دکمه می‌آید
 $$(".setSaveBtn").forEach(b=>b.onclick=async()=>{const m="#"+b.dataset.msg;$$(".setSaveBtn").forEach(x=>x.disabled=true);
-  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value,h3t:readH3t(),rwReasons:$("#sRwR").value});$$(".setSaveBtn").forEach(x=>x.disabled=false);
+  const r=await api("saveSettings",{products:readRows("#pRows"),users:allUsers(),shifts:$("#sShifts").value,h3t:readH3t(),rwReasons:$("#sRwR").value,rot:{on:$("#rotOn").checked,day:$("#rotDay").value,dir:$("#rotDir").value},rotNow:ROTNOW,rotN:+((SET.rot||{}).n||0)});ROTNOW=false;$$(".setSaveBtn").forEach(x=>x.disabled=false);
   if(!r.ok)return msg(m,esc(r.error),"bad");META=await api("meta");ME=META.user;showApp();if(current==="set"){["#setMsgP","#setMsgS","#setMsgL","#setMsg"].forEach(x=>msg(x,""));msg(m,"تنظیمات ذخیره شد."+(r.warn?"<br>"+esc(r.warn):""),r.warn?"warn":"ok");}});
 // جستجو و فیلتر اپراتورها (ردیف‌های پنهان هم ذخیره می‌شوند)
 function uFilter(){const q=$("#uSearch").value.trim().replace(/ي/g,"ی").replace(/ك/g,"ک"),f=$("#uFilter").value;let n=0,all=0;
