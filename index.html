@@ -461,7 +461,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.24-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.24-b";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -558,6 +558,8 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
   DB.coil.forEach(r=>{const d=D(r),per=perOf(r),sh=shiftOf(r,r.coil),rj=r.result==="ریجکت";
     // ریجکت QC پیچش از عملکرد پیچش‌کار کم می‌شود؛ QC کار هم بابت بازرسی عملکرد می‌گیرد
     add(d,"پیچش",r.coil,sh,rj?0:r.packs,per,rj?r.packs:0,r.code);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,r.packs,per,rj?r.packs:0,r.code);});
+  // سالن ۳: عملکرد هر اپراتور جت پرینتر و دوخت (به عدد)؛ ریجکت از عملکرد خودش کم می‌شود. کارتن‌گذاری اپراتور ندارد.
+  [["jet","جت پرینتر"],["sew","دوخت"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{if(!r.op||!r.shift)return;const n=+r.packs||0,rj=r.result==="ریجکت";add(D(r),st,r.op,r.shift,rj?0:n,1,rj?n:0,r.code);}));
   // دوباره‌کاری سالن ۲: از عملکرد فرد مقصر در روز تولید کم و به عملکرد انجام‌دهنده در روز دوباره‌کاری اضافه می‌شود
   const mk=(date,st,name,sh,f,v)=>{const o=m[date+"|"+st+"|"+name+"|"+sh];if(o)o[f]=(o[f]||0)+v;};
   (DB.rework||[]).forEach(r=>{if(r.hall!=="2")return;const per=+r.per||1,n=+r.packs||0,fsh=r.fshift||defShift(r.fp);add(r.fday,r.fst,r.fp,fsh,-n,per,0,r.code);mk(r.fday,r.fst,r.fp,fsh,"rw",n*per);
@@ -646,7 +648,7 @@ const H={
         QUIET=true;let res;try{res=H[FN[k]](dd);}finally{QUIET=false;}
         if(!res.ok){out.failed.push({kind:KN[k],lot:r.lot||"",t:r.t||"",error:res.error,oid:r.oid});continue;}
         Object.assign(res.rec,{t:String(r.t||res.rec.t),oid:r.oid,by:byOk(F.by)?F.by:u.name});if(r.wd)res.rec.wd=String(r.wd);out.imported++;out.done.push(r.oid);}}
-    logEv(u.name,"آپلود فایل آفلاین",`از ${F.by||"—"} (فرم ${F.at||"—"}) · ${out.imported} ثبت جدید · ${out.dup} تکراری رد شد · ${out.failed.length} خطا`);save();return ok(out);});},
+    logEv(u.name,"آپلود فایل آفلاین",`از ${F.by||"—"} (فرم ${F.at||"—"}) · ${out.imported} ثبت جدید · ${out.dup} تکراری رد شد (قبلاً رسیده بود)${out.failed.length?` · ${out.failed.length} ثبت قبول نشد و روی گوشی/فایل ماند: `+out.failed.slice(0,8).map(x=>`${x.kind} لات ${x.lot||"—"} ${String(x.t||"").slice(5,16)} ← ${x.error}`).join(" | ")+(out.failed.length>8?" …":""):" · بدون خطا"}`);save();return ok(out);});},
   // ویرایش: ثبت قبلی برداشته می‌شود، همان بررسی‌های ثبت جدید اجرا می‌شود و نتیجه سر جای قبلی با همان شناسه و زمان ثبت برمی‌گردد
   updateRec(d){return needP("entry",u=>{const FN=RFN,KN=RKN;
     const KOF=RKOF;for(const k of(KOF[d.kind]?[KOF[d.kind]]:RK)){const i=DB[k].findIndex(r=>r.id===+d.id);if(i<0)continue;const old=DB[k][i];
@@ -780,7 +782,8 @@ const H={
     daily.forEach(r=>{if(r.target===null)return;const o=B(r.date,r.station,r.shift,r.unit);if(planSh[r.date+"|"+r.station+"|"+r.shift+"|"+r.unit]===undefined)o.target+=r.target;o.hasT=true;o.people.add(r.name);});
     Object.values(actualsS(f,t,code,qs,basis)).forEach(a=>{const unit=unitOf(a.name,a.station,a.date);const o=B(a.date,a.station,a.shift,unit);o.packs+=amt(a,unit);o.rej+=ramt(a,unit);o.people.add(a.name);});
     // سالن ۳ (جت پرینتر، دوخت، کارتن‌گذاری): عملکرد هر شیفت = جمع «تعداد» ثبت‌ها، منهای ریجکت
-    [["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{const d0=basis==="prod"?r.date:recDay(r);if(d0<f||d0>t||(code&&r.code!==code)||!r.shift)return;
+    // (جت پرینتر و دوخت با اپراتور از actualsS آمده‌اند؛ اینجا فقط ثبت‌های بدون اپراتور و کارتن‌گذاری)
+    [["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{const d0=basis==="prod"?r.date:recDay(r);if(d0<f||d0>t||(code&&r.code!==code)||!r.shift||(k!=="carton"&&r.op))return;
       const n=+r.packs||0,rj=r.result==="ریجکت";const o=B(d0,st,r.shift,"عدد");o.packs+=rj?0:n;o.rej+=rj?n:0;if(r.op)o.people.add(r.op);}));
     // تارگت ایستگاه و شیفت از «برنامه‌ی تولید» هر شیفت خوانده می‌شود (هر جا برنامه ثبت شده باشد)
     Object.entries(planSh).forEach(([k,v])=>{const[d0,st,sh,u]=k.split("|");const o=B(d0,st,sh,u);o.target=v;o.hasT=true;o.plan=true;});
@@ -882,7 +885,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.24-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.24-b";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1301,7 +1304,14 @@ function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return d
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>${pl!==undefined?"تارگت شیفت‌ها":"تارگت"}</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
       ${s.startsWith("QC")?`<small style="margin-top:4px">ریجکت: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`:`<small style="margin-top:4px">${s==="تست"?"ریجکت تست (از عملکرد مونتاژکار کم شده)":"کسر ریجکت از عملکرد"}: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`}${lastLine(r.last&&r.last[s])}</div>`;}).join("");}).join("");
-  let h=prodNote(r)+`<div class="kpis">${kp}</div>`;
+  // کارت‌های سالن ۳: جمع شیفت‌ها (تارگت از برنامه‌ی هر شیفت یا پیش‌فرض تنظیمات)
+  const kp3=H3ST.map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const L=who?L0:(r.shiftSum||[]).filter(x=>x.station===s);
+    const a=L.reduce((x,p)=>x+(p.packs||0),0),hasT=!who&&L.some(p=>p.target!==null&&p.target!==undefined),t=hasT?L.reduce((x,p)=>x+(p.target||0),0):0,rj=L.reduce((x,p)=>x+(p.rej||0),0);const pc=t?Math.round(a/t*1000)/10:null;
+    return`<div class="kpi"><div class="kt">${s} <i>(به عدد · سالن ۳)</i></div>
+      <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>تارگت شیفت‌ها</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
+      <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
+      <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small></div>`;}).join("");
+  let h=prodNote(r)+`<div class="kpis">${kp}${kp3}</div>`;
   // جدول اصلی: هر نفر، ایستگاه‌هایش زیر هم، و جمع اگر بیش از یک ایستگاه دارد
   const groups=[];mineP.forEach(p=>{let g=groups.find(x=>x.name===p.name);if(!g)groups.push(g={name:p.name,rows:[]});g.rows.push(p);});
   const cells=p=>`<td>${p.unit}</td><td class="n">${fa(p.days)}</td><td class="n">${p.target===null?"—":fa(p.target)}</td><td class="n">${fa(p.packs)}</td><td class="n">${devCell(p.dev)}</td><td>${pctCell(p.pct)}</td><td class="n">${true?(p.rej?`<span style="color:var(--bad)">${fa(p.rej)}</span>`:fa(0)):""}</td>`;
@@ -1312,7 +1322,7 @@ function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return d
       else x+=`<tr class="subtot"><td>جمع همه‌ی ایستگاه‌ها</td><td>${g.rows[0].unit}</td><td class="n"></td><td class="n">${hasT?fa(t):"—"}</td><td class="n">${fa(a)}</td><td class="n">${devCell(hasT?a-t:null)}</td><td>${pctCell(hasT&&t?Math.round(a/t*1000)/10:null)}</td><td></td></tr>`;}
     return x;}).join("");
   h+=`<h3>عملکرد هر نفر در هر ایستگاه (جمع دوره)</h3><div class="tw"><table><thead><tr><th>نام</th><th>ایستگاه</th><th>واحد</th><th>روز</th><th>تارگت</th><th>عملکرد خالص</th><th>انحراف</th><th>تحقق</th><th>ریجکت</th></tr></thead><tbody>${body||`<tr><td colspan="9" class="hint" style="text-align:center">در این بازه نه تارگتی هست نه عملکردی.</td></tr>`}</tbody></table></div>`;
-  const st=["همه",...rStn()];
+  const st=["همه",...rStn(),"جت پرینتر","دوخت"];
   h+=`<h3>انحراف روزانه</h3><div class="row" style="margin-top:8px" id="rSt">${st.map(s=>`<button class="chip" data-s="${s}" aria-pressed="${s===RSTATION}">${s}</button>`).join("")}</div>
   <div class="tw"><table><thead><tr><th>تاریخ</th><th>نام</th><th>ایستگاه</th><th>شیفت</th><th>واحد</th><th>تارگت</th><th>عملکرد خالص</th><th>انحراف</th><th>تحقق</th><th>ریجکت</th></tr></thead><tbody id="rDaily"></tbody></table></div>`;
   $("#rOut").innerHTML=h;const draw=()=>{const rows=r.daily.filter(x=>(RSTATION==="همه"||x.station===RSTATION)&&(!who||x.name===who));$("#rDaily").innerHTML=rows.length?rows.map(x=>`<tr><td class="mono">${x.date}</td><td>${esc(x.name)}</td><td>${x.station}</td><td>${esc(x.shift)}</td><td>${x.unit}</td><td class="n">${x.target===null?"—":fa(x.target)}</td><td class="n">${fa(x.packs)}</td><td class="n">${devCell(x.dev)}</td><td>${pctCell(x.pct)}</td><td class="n">${x.rej?`<span style="color:var(--bad)">${fa(x.rej)}</span>`:""}</td></tr>`).join(""):`<tr><td colspan="10" class="hint" style="text-align:center">موردی نیست.</td></tr>`;};
