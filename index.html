@@ -143,6 +143,12 @@ select.comboSel.auto+.combo .comboIn{border-color:#9cc3ea;background:#f4f9ff}
 tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{background:#fdecec}
 .wdbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff)}.wdbar label{font-weight:700;font-size:13px;margin:0}
 .wdbar.late{background:#fff4e0;border-color:#e9a23b}.wdbar.late #wdNote{color:#8a5300;font-weight:600}
+.hallwrap{display:flex;flex-direction:column;gap:14px;margin:12px 0}
+.hallgrp{border:1px solid var(--line);border-radius:14px;padding:12px 14px 14px;background:linear-gradient(180deg,var(--soft),transparent 70px)}
+.hallgrp.h2{border-top:4px solid #2f6fb5}.hallgrp.h3{border-top:4px solid #7a5cc7}
+.hallhd2{display:flex;align-items:center;gap:10px;margin-bottom:10px}.hallbadge{font-weight:800;font-size:14px;padding:3px 12px;border-radius:999px;color:#fff;background:#2f6fb5}.hallgrp.h3 .hallbadge{background:#7a5cc7}
+.kpis3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.kpis3 .kpi{background:var(--card,#fff);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+@media (max-width:900px){.kpis3{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:600px){.kpis3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -461,7 +467,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.24-b";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.25-a";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -885,7 +891,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.24-b";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.25-a";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1297,7 +1303,7 @@ function drawHistory(){const who=$("#rWho").value;const r=repV();
   const hb=$("#hSt");if(hb)hb.onclick=e=>{const b=e.target.closest("[data-hs]");if(!b)return;HST=b.dataset.hs;drawHistory();};}
 function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return drawHistory();if(RVIEW==="s")return drawShift();const r=repV(),who=$("#rWho").value,mineP=r.people.filter(p=>!who||p.name===who);
   // کارت هر ایستگاه: عملکرد در برابر تارگت
-  const kp=rStn().map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const us=[...new Set([...L0.map(p=>p.unit),...(who?[]:Object.keys(r.plan||{}).filter(k=>k.split("|")[0]===s).map(k=>k.split("|")[1]))])];if(!us.length)us.push("عدد");
+  const kp=[...rStn().filter(s=>!s.startsWith("QC")),...rStn().filter(s=>s.startsWith("QC"))].map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const us=[...new Set([...L0.map(p=>p.unit),...(who?[]:Object.keys(r.plan||{}).filter(k=>k.split("|")[0]===s).map(k=>k.split("|")[1]))])];if(!us.length)us.push("عدد");
     return us.map(u=>{const L=L0.filter(p=>p.unit===u);const pl=who?undefined:(r.plan||{})[s+"|"+u];const t=pl!==undefined?pl:L.reduce((a,p)=>a+(p.target||0),0),a=L.reduce((x,p)=>x+p.packs,0);
     const pc=t?Math.round(a/t*1000)/10:null;
     return`<div class="kpi"><div class="kt">${s} <i>(به ${u})</i></div>
@@ -1311,7 +1317,8 @@ function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return d
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>تارگت شیفت‌ها</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
       <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small></div>`;}).join("");
-  let h=prodNote(r)+`<div class="kpis">${kp}${kp3}</div>`;
+  const hg=(n,sub,c)=>c.trim()?`<section class="hallgrp h${n}"><div class="hallhd2"><span class="hallbadge">سالن ${n==="2"?"۲":"۳"}</span><span class="hint">${sub}</span></div><div class="kpis3">${c}</div></section>`:"";
+  let h=prodNote(r)+`<div class="hallwrap">${hg("2","مونتاژ · تست · پیچش",kp)}${hg("3","جت پرینتر · دوخت · کارتن‌گذاری",kp3)}</div>`;
   // جدول اصلی: هر نفر، ایستگاه‌هایش زیر هم، و جمع اگر بیش از یک ایستگاه دارد
   const groups=[];mineP.forEach(p=>{let g=groups.find(x=>x.name===p.name);if(!g)groups.push(g={name:p.name,rows:[]});g.rows.push(p);});
   const cells=p=>`<td>${p.unit}</td><td class="n">${fa(p.days)}</td><td class="n">${p.target===null?"—":fa(p.target)}</td><td class="n">${fa(p.packs)}</td><td class="n">${devCell(p.dev)}</td><td>${pctCell(p.pct)}</td><td class="n">${true?(p.rej?`<span style="color:var(--bad)">${fa(p.rej)}</span>`:fa(0)):""}</td>`;
