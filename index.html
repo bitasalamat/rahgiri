@@ -161,6 +161,7 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
 .btn.warnbtn{background:#e9a23b;border-color:#e9a23b;color:#fff}
 .on-pend{background:#e9a23b;border-color:#e9a23b;color:#fff}.qline{display:block;margin-top:3px;font-size:12px;color:var(--muted)}.qline.pend{color:#a05f00;font-weight:700}.qline.rw{color:var(--bad)}
 .opchips{display:flex;flex-wrap:wrap;gap:6px}.opchip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;background:var(--card,#fff)}.opchip.top{border-color:var(--bad);background:var(--bad-soft)}
+.qrow{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}.kpi small.qrow{display:flex!important;flex-direction:row}.qrow .rwt{display:inline;white-space:nowrap}.qrow .rwn{font-weight:700;display:inline}.qrow .rwv{color:var(--bad)}.qrate{font-size:11.5px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:1px 8px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -493,7 +494,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.28-b";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.28-c";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -944,7 +945,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.28-b";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.28-c";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1210,7 +1211,11 @@ $("#recent").onclick=async e=>{const op=e.target.closest("[data-open]");if(op){c
 /* ---------- بررسی QC ---------- */
 // زیر کارت هر ایستگاه: مقدار «تحت بررسی» و نرخ کیفیت (Quality در OEE = سالم ÷ کل بازرسی‌شده)
 const pendLine=(L,u)=>{const v=L.reduce((x,p)=>x+(p.pend||0),0);return v?`<small class="qline pend">⏳ تحت بررسی: ${fa(v)} ${u||"عدد"} (هنوز در عملکرد و ریجکت حساب نشده)</small>`:"";};
-const rwLine=(r,s,who)=>{const v=who?((r.rwP||{})[s+"|"+who]||0):((r.rwSt||{})[s]||0);return`<small class="qline${v?" rw":""}">دوباره‌کاری${s==="جت پرینتر"||s==="دوخت"||s==="کارتن‌گذاری"?"":" (از عملکرد کم شده)"}: <b>${fa(v)}</b> عدد</small>`;};
+// خط پایین کارت: دوباره‌کاری + نرخ کیفیت (Quality در OEE = سالم ÷ کل؛ ریجکت و دوباره‌کاری هر دو افت کیفیت‌اند)
+const qLine2=(a,rj,rw,incl,u)=>{const per=u==="بسته"?null:1;const tot=incl?a+rw:a+rj+rw,good=incl?a-rj:a;return tot>0?`<span class="qrate" title="نرخ کیفیت (OEE-Q) = سالم ÷ (سالم + ریجکت + دوباره‌کاری)">کیفیت ${fa(Math.round(good/tot*1000)/10)}٪</span>`:"";};
+const rwLine=(r,s,who,a,rj,incl,u)=>{const v=who?((r.rwP||{})[s+"|"+who]||0):((r.rwSt||{})[s]||0);const h3=s==="جت پرینتر"||s==="دوخت"||s==="کارتن‌گذاری";
+  // دوباره‌کاری به عدد است؛ اگر کارت به بسته است، برای نرخ کیفیت به عدد تبدیل نمی‌شود و فقط ریجکت حساب می‌شود
+  return`<small class="qline qrow"><span class="rwt${v?" rwv":""}">دوباره‌کاری${h3?"":" (کم شده)"}: <span class="rwn">${fa(v)}</span> عدد</span>${qLine2(a||0,rj||0,u==="عدد"?v:0,!!incl,u)}</small>`;};
 const qLine=(a,rj,incl)=>{const tot=incl?a:a+rj,good=incl?a-rj:a;return tot>0?`<small class="qline">نرخ کیفیت (OEE-Q): <b>${fa(Math.round(good/tot*1000)/10)}٪</b></small>`:"";};
 let QCV="p";
 $("#qcSeg").onclick=e=>{const b=e.target.closest("[data-q]");if(!b)return;QCV=b.dataset.q;$$("#qcSeg button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));$("#qcHistBar").hidden=QCV!=="h";qcLoad();};
@@ -1446,14 +1451,14 @@ function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return d
     return`<div class="kpi"><div class="kt">${s} <i>(به ${u})</i></div>
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>${pl!==undefined?"تارگت شیفت‌ها":"تارگت"}</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
-      ${s.startsWith("QC")?`<small style="margin-top:4px">ریجکت: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`:`<small style="margin-top:4px">${s==="تست"?"ریجکت تست (از عملکرد مونتاژکار کم شده)":"کسر ریجکت از عملکرد"}: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`}${pendLine(L,u)}${s.startsWith("QC")?"":rwLine(r,s,who)}${lastLine(r.last&&r.last[s])}</div>`;}).join("");}).join("");
+      ${s.startsWith("QC")?`<small style="margin-top:4px">ریجکت: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`:`<small style="margin-top:4px">${s==="تست"?"ریجکت تست (از عملکرد مونتاژکار کم شده)":"کسر ریجکت از عملکرد"}: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`}${pendLine(L,u)}${s.startsWith("QC")?qLine2(a,L.reduce((x,p)=>x+p.rej,0),0,true):rwLine(r,s,who,a,L.reduce((x,p)=>x+p.rej,0),s==="تست",u)}${lastLine(r.last&&r.last[s])}</div>`;}).join("");}).join("");
   // کارت‌های سالن ۳: جمع شیفت‌ها (تارگت از برنامه‌ی هر شیفت یا پیش‌فرض تنظیمات)
   const kp3=H3ST.map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const L=who?L0:(r.shiftSum||[]).filter(x=>x.station===s);
     const a=L.reduce((x,p)=>x+(p.packs||0),0),hasT=!who&&L.some(p=>p.target!==null&&p.target!==undefined),t=hasT?L.reduce((x,p)=>x+(p.target||0),0):0,rj=L.reduce((x,p)=>x+(p.rej||0),0);const pc=t?Math.round(a/t*1000)/10:null;
     return`<div class="kpi"><div class="kt">${s} <i>(به عدد · سالن ۳)</i></div>
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>تارگت شیفت‌ها</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
-      <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small>${pendLine(L,"عدد")}${rwLine(r,s,who)}</div>`;}).join("");
+      <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small>${pendLine(L,"عدد")}${rwLine(r,s,who,a,rj,false,"عدد")}</div>`;}).join("");
   const hg=(n,sub,c)=>c.trim()?`<section class="hallgrp h${n}"><div class="hallhd2"><span class="hallbadge">سالن ${n==="2"?"۲":"۳"}</span><span class="hint">${sub}</span></div><div class="kpis3">${c}</div></section>`:"";
   let h=prodNote(r)+`<div class="hallwrap">${hg("2","مونتاژ · تست · پیچش",kp)}${hg("3","جت پرینتر · دوخت · کارتن‌گذاری",kp3)}</div>`;
   // جدول اصلی: هر نفر، ایستگاه‌هایش زیر هم، و جمع اگر بیش از یک ایستگاه دارد
