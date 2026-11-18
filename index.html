@@ -159,7 +159,8 @@ tr.dfneg td{background:#fde8e8}tr.dfpos td{background:#fff4e0}tr.dfsus td{backgr
 .jcal .jd.sel{background:#1f2f57;color:#fff}.jcal .jd.sel::after{background:#fff}.jcal .jd.tod{outline:1.5px solid #1f2f57;outline-offset:-2px}.jcal .jd.off{color:var(--muted);opacity:.45;cursor:default}
 input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transparent)}
 .btn.warnbtn{background:#e9a23b;border-color:#e9a23b;color:#fff}
-.on-pend{background:#e9a23b;border-color:#e9a23b;color:#fff}.qline{display:block;margin-top:3px;font-size:12px;color:var(--muted)}.qline.pend{color:#a05f00;font-weight:700}
+.on-pend{background:#e9a23b;border-color:#e9a23b;color:#fff}.qline{display:block;margin-top:3px;font-size:12px;color:var(--muted)}.qline.pend{color:#a05f00;font-weight:700}.qline.rw{color:var(--bad)}
+.opchips{display:flex;flex-wrap:wrap;gap:6px}.opchip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;background:var(--card,#fff)}.opchip.top{border-color:var(--bad);background:var(--bad-soft)}
 </style>
 </head>
 <body>
@@ -409,6 +410,12 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
         <div id="rw_msg"></div>
       </div>
       <div class="card">
+        <h2>آنالیز دوباره‌کاری</h2><p class="sub">چه مقدار دوباره‌کاری، از چه محصولی، به چه علتی و به خاطر کدام اپراتورها (بر اساس روز دوباره‌کاری).</p>
+        <div class="row"><div class="f"><label for="rsFrom">از</label><input id="rsFrom" class="ltr" style="width:130px"></div><div class="f"><label for="rsTo">تا</label><input id="rsTo" class="ltr" style="width:130px"></div>
+          <div class="f"><label for="rsHall">سالن</label><select id="rsHall" style="width:120px"><option value="">هر دو</option><option value="2">سالن ۲</option><option value="3">سالن ۳</option></select></div><button class="btn sm p" id="rsGo">نمایش</button></div>
+        <div id="rsOut"></div>
+      </div>
+      <div class="card">
         <h2>دوباره‌کاری‌های ثبت‌شده</h2>
         <div class="row"><div class="f"><label for="rwListDay">روز کاری</label><select id="rwListDay"></select></div></div>
         <div id="rwList"></div>
@@ -486,7 +493,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.08.27-b";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.08.28-b";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -733,6 +740,11 @@ const H={
     DB.rework.push(r);logEv(u.name,"ثبت دوباره‌کاری",`سالن ${hall==="2"?"۲":"۳"} · لات ${r.lot}${r.serial?" · سریال "+r.serial:""} · ${r.pcs} عدد · مقصر: ${r.fp} (${r.fst}، روز ${fday}) · انجام‌دهنده: ${dp?dp+" ("+dst+")":"—"} · علت: ${reason}${note?" — "+note:""}${same?" · ⚠ مقصر و انجام‌دهنده یکی است (با تأیید دوم ثبت شد)":""}`);save();return ok({rec:r});});},
   // روزهایی از یک ماه که ثبت تولید دارند (برای نقطه‌های تقویم)
   dataDays(d){const u=me();if(!u)return err("ابتدا وارد شوید.",401);const ym=String(d.month||"").slice(0,7);const S=new Set();RK.forEach(k=>DB[k].forEach(r=>{const x=recDay(r);if(x.startsWith(ym))S.add(x);}));return ok({days:[...S]});},
+  // خلاصه‌ی دوباره‌کاری: چه محصولی، به چه علتی، چه مقدار (بر اساس روز دوباره‌کاری)
+  reworkSummary(d){return needP("entry",u=>{let f=normDate(d.from)||addDays(prodDay(),-29),t=normDate(d.to)||prodDay();if(f>t)[f,t]=[t,f];const hall=String(d.hall||"");
+    const R=(DB.rework||[]).filter(r=>r.day>=f&&r.day<=t&&(!hall||r.hall===hall));const m={},P={},C={},O={};
+    R.forEach(r=>{const pr=r.product||r.code,rs=r.reason+(r.reason==="سایر"&&r.note?" ("+r.note+")":"");const k=pr+"|"+rs;const o=m[k]||(m[k]={product:pr,reason:rs,n:0,pcs:0});o.n++;o.pcs+=+r.pcs||0;P[pr]=(P[pr]||0)+(+r.pcs||0);C[rs]=(C[rs]||0)+(+r.pcs||0);const ok_=r.fp+"|"+r.fst;const q=O[ok_]||(O[ok_]={name:r.fp,station:r.fst,n:0,pcs:0,rs:{}});q.n++;q.pcs+=+r.pcs||0;q.rs[rs]=(q.rs[rs]||0)+1;});
+    return ok({from:f,to:t,cells:Object.values(m),products:Object.entries(P).sort((a,b)=>b[1]-a[1]).map(x=>({name:x[0],pcs:x[1]})),reasons:Object.entries(C).sort((a,b)=>b[1]-a[1]).map(x=>({name:x[0],pcs:x[1]})),ops:Object.values(O).sort((a,b)=>b.pcs-a.pcs).map(o=>Object.assign(o,{top:Object.entries(o.rs).sort((a,b)=>b[1]-a[1])[0][0]})),total:R.reduce((a,r)=>a+(+r.pcs||0),0),count:R.length});});},
   reworkList(d){return needP("entry",u=>{const day=normDate(d.day)||prodDay();return ok({day,rows:(DB.rework||[]).filter(r=>r.day===day&&mine(u,r)).sort((a,b)=>a.t<b.t?1:-1),all:isMgr(u)});});},
   delRework(d){return needP("entry",u=>{const i=(DB.rework||[]).findIndex(r=>r.id===+d.id);if(i<0)return err("ثبت پیدا نشد.");const r=DB.rework[i];if(!mine(u,r))return err("فقط ثبت‌های خودتان را می‌توانید حذف کنید.",403);
     DB.rework.splice(i,1);logEv(u.name,"حذف دوباره‌کاری",`لات ${r.lot} · ${r.pcs} عدد · مقصر ${r.fp} (${r.fst}) · ثبت اصلی: ${r.by} در ${r.t}`);save();return ok({});});},
@@ -845,7 +857,9 @@ const H={
     const ss={};Object.values(sb).forEach(o=>{const k=o.shift+"|"+o.station+"|"+o.unit;const x=ss[k]||(ss[k]={shift:o.shift,station:o.station,unit:o.unit,target:0,hasT:false,packs:0,rej:0,pend:0,days:new Set(),people:new Set()});x.target+=o.target;x.hasT=x.hasT||o.hasT;x.packs+=o.packs;x.rej+=o.rej;x.pend+=o.pend||0;x.days.add(o.date);o.people.forEach(n=>x.people.add(n));});
     const shiftSum=Object.values(ss).map(o=>({shift:o.shift,station:o.station,unit:o.unit,days:o.days.size,people:o.people.size,names:[...o.people].join("، "),target:o.hasT?o.target:null,packs:o.packs,rej:o.rej,pend:o.pend,dev:o.hasT?o.packs-o.target:null,pct:o.hasT&&o.target?Math.round(o.packs/o.target*1000)/10:null})).sort((a,b)=>(so(a.shift)-so(b.shift))||(order[a.station]-order[b.station]));
     const DD=r=>basis==="prod"?r.date:recDay(r);const inR=r=>{const x=DD(r);return x>=f&&x<=t;};const tot={asm:DB.asm.filter(inR).reduce((s,r)=>s+r.packs,0),ok:DB.test.filter(r=>inR(r)&&r.result==="تایید").reduce((s,r)=>s+r.packs,0),rej:DB.test.filter(r=>inR(r)&&r.result==="ریجکت").reduce((s,r)=>s+r.packs,0),coil:DB.coil.filter(inR).reduce((s,r)=>s+r.packs,0)};
-    return ok({basis,plan,last,from:f,to:t,product:code,productName:code?prod(code).name:"",shifts:DB.shifts,shiftSum,shiftDaily,people:people2,daily:daily.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(uo(a.name)-uo(b.name))||(order[a.station]-order[b.station])),tot,monthStart:prodDay().slice(0,8)+"01",weekAgo:addDays(prodDay(),-6)});});},
+    // دوباره‌کاری هر ایستگاه و هر نفر مقصر در این بازه (بر اساس روز تولید)
+    const rwSt={},rwP={};(DB.rework||[]).forEach(r=>{if(r.fday<f||r.fday>t||(code&&r.code!==code))return;rwSt[r.fst]=(rwSt[r.fst]||0)+(+r.pcs||0);const k=r.fst+"|"+r.fp;rwP[k]=(rwP[k]||0)+(+r.pcs||0);});
+    return ok({rwSt,rwP,basis,plan,last,from:f,to:t,product:code,productName:code?prod(code).name:"",shifts:DB.shifts,shiftSum,shiftDaily,people:people2,daily:daily.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(uo(a.name)-uo(b.name))||(order[a.station]-order[b.station])),tot,monthStart:prodDay().slice(0,8)+"01",weekAgo:addDays(prodDay(),-6)});});},
   log(d){return needP("log",()=>{let f=normDate(d.from)||addDays(today(),-6),t=normDate(d.to)||today();if(f>t)[f,t]=[t,f];
     const rows=DB.events.filter(e=>{const x=e.t.slice(0,10);return x>=f&&x<=t&&(!d.by||e.by===d.by)&&(!d.action||e.action===d.action);}).slice().reverse();
     return ok({from:f,to:t,rows:rows.slice(0,1000),total:rows.length,users:[...new Set(DB.events.map(e=>e.by))],actions:[...new Set(DB.events.map(e=>e.action))]});});},
@@ -930,7 +944,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.08.27-b";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.08.28-b";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1040,7 +1054,7 @@ document.addEventListener("mousedown",e=>{if(!JC)return;if(JC.el.contains(e.targ
     else if(b.dataset.jm){let{y,m}=JC;m+=+b.dataset.jm;if(m<1){m=12;y--;}if(m>12){m=1;y++;}JC.y=y;JC.m=m;jDraw();}return;}if(e.target!==JC.inp)jClose();});
 document.addEventListener("keydown",e=>{if(JC&&e.key==="Escape"){jClose();}});
 addEventListener("resize",jPlace);addEventListener("scroll",jPlace,true);
-const JIDS=["qcFrom","qcTo","a_date","t_date","c_date","j_date","w_date","x_date","rw_fday","recDate","gDate","rFrom","rTo","mFrom","mTo","lgFrom","lgTo"];
+const JIDS=["rsFrom","rsTo","qcFrom","qcTo","a_date","t_date","c_date","j_date","w_date","x_date","rw_fday","recDate","gDate","rFrom","rTo","mFrom","mTo","lgFrom","lgTo"];
 if(document.getElementById("gDate"))document.getElementById("gDate").dataset.future="1";   // تارگت فردا را هم می‌شود از قبل زد
 JIDS.forEach(id=>{const i=document.getElementById(id);if(!i)return;i.classList.add("jdate");i.setAttribute("autocomplete","off");i.addEventListener("focus",()=>jOpen(i));i.addEventListener("click",()=>jOpen(i));
   i.addEventListener("input",()=>{if(JC&&JC.inp===i){const p=jparse(i.value);if(p&&(p[0]!==JC.y||p[1]!==JC.m)){JC.y=p[0];JC.m=p[1];}jDraw();}});i.addEventListener("blur",()=>setTimeout(()=>{if(JC&&JC.inp===i&&document.activeElement!==i)jClose();},150));});
@@ -1196,6 +1210,7 @@ $("#recent").onclick=async e=>{const op=e.target.closest("[data-open]");if(op){c
 /* ---------- بررسی QC ---------- */
 // زیر کارت هر ایستگاه: مقدار «تحت بررسی» و نرخ کیفیت (Quality در OEE = سالم ÷ کل بازرسی‌شده)
 const pendLine=(L,u)=>{const v=L.reduce((x,p)=>x+(p.pend||0),0);return v?`<small class="qline pend">⏳ تحت بررسی: ${fa(v)} ${u||"عدد"} (هنوز در عملکرد و ریجکت حساب نشده)</small>`:"";};
+const rwLine=(r,s,who)=>{const v=who?((r.rwP||{})[s+"|"+who]||0):((r.rwSt||{})[s]||0);return`<small class="qline${v?" rw":""}">دوباره‌کاری${s==="جت پرینتر"||s==="دوخت"||s==="کارتن‌گذاری"?"":" (از عملکرد کم شده)"}: <b>${fa(v)}</b> عدد</small>`;};
 const qLine=(a,rj,incl)=>{const tot=incl?a:a+rj,good=incl?a-rj:a;return tot>0?`<small class="qline">نرخ کیفیت (OEE-Q): <b>${fa(Math.round(good/tot*1000)/10)}٪</b></small>`:"";};
 let QCV="p";
 $("#qcSeg").onclick=e=>{const b=e.target.closest("[data-q]");if(!b)return;QCV=b.dataset.q;$$("#qcSeg button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));$("#qcHistBar").hidden=QCV!=="h";qcLoad();};
@@ -1222,7 +1237,7 @@ function initRework(){const days=META.wdDays||[META.prodDay];const dOpt=days.map
   const k1=$("#rw_shift").value;$("#rw_shift").innerHTML=`<option value="">انتخاب کنید</option>`+META.shifts.map(x=>`<option>${esc(x)}</option>`).join("");if(k1)$("#rw_shift").value=k1;
   const k2=$("#rw_code").value;$("#rw_code").innerHTML=prodOpts();if(k2)$("#rw_code").value=k2;
   const k3=$("#rw_reason").value;$("#rw_reason").innerHTML=`<option value="">انتخاب کنید</option>`+(META.rwReasons||[]).map(x=>`<option>${esc(x)}</option>`).join("")+`<option>سایر</option>`;if(k3)$("#rw_reason").value=k3;
-  rwHall(RWH_,true);rwLoad();}
+  rwHall(RWH_,true);rwLoad();rsLoad();}
 function rwHall(h,keep){RWH_=h;$$("#rwHall button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.h===h)));
   const fs=$("#rw_fst").value,ds=$("#rw_dst").value;$("#rw_fst").innerHTML=`<option value="">انتخاب کنید</option>`+RWF[h].map(x=>`<option>${esc(x)}</option>`).join("");$("#rw_dst").innerHTML=`<option value="">—</option>`+RWST[h].map(x=>`<option>${esc(x)}</option>`).join("");
   if(keep&&RWF[h].includes(fs))$("#rw_fst").value=fs;if(keep&&RWST[h].includes(ds))$("#rw_dst").value=ds;
@@ -1253,7 +1268,7 @@ $("#rw_go").onclick=async()=>{const v=id=>$(id).value.trim();const d={hall:RWH_,
   if(!r.ok&&r.need==="same"){RW_SAME=d.fp+"|"+d.dp;$("#rw_go").textContent="تأیید و ثبت (مرحله‌ی دوم)";$("#rw_go").classList.add("warnbtn");return msg("#rw_msg","⚠ "+esc(r.error),"warn");}
   rwSameReset();if(!r.ok)return msg("#rw_msg",esc(r.error),"bad");
   msg("#rw_msg",`دوباره‌کاری ثبت شد: لات <span class="mono">${esc(r.rec.lot)}</span> · ${fa(r.rec.pcs)} عدد · ${RWH_==="2"?`از عملکرد <b>${esc(r.rec.fp)}</b> (${esc(r.rec.fst)}، روز ${esc(r.rec.fday)}) کم شد${r.rec.dp?` و به عملکرد <b>${esc(r.rec.dp)}</b> (${esc(r.rec.dst)}، روز ${esc(r.rec.day)}) اضافه شد`:""}`:"ثبت شد (سالن ۳ عملکرد فردی ندارد؛ در گزارش «دوباره‌کاری هر نفر» می‌آید)"}.`,"ok");
-  ["#rw_serial","#rw_packs","#rw_note"].forEach(id=>$(id).value="");$("#rwListDay").value=r.rec.day;rwLoad();};
+  ["#rw_serial","#rw_packs","#rw_note"].forEach(id=>$(id).value="");$("#rwListDay").value=r.rec.day;rwLoad();rsLoad();};
 $("#rwListDay").addEventListener("change",rwLoad);
 // هشدار «مقصر و انجام‌دهنده یکی است»: کلیک دوم با همان دو نفر ثبت می‌کند؛ عوض شدن هر کدام هشدار را از نو می‌خواهد
 let RW_SAME="";function rwSameReset(){RW_SAME="";$("#rw_go").textContent="ثبت دوباره‌کاری";$("#rw_go").classList.remove("warnbtn");}
@@ -1262,7 +1277,16 @@ async function rwLoad(){const r=await api("reworkList",{day:$("#rwListDay").valu
   if(!r.rows.length)return msg("#rwList",`در روز کاری ${esc(r.day)} دوباره‌کاری ${r.all?"":"توسط شما "}ثبت نشده است.`,"ok");
   $("#rwList").innerHTML=`<div class="tw"><table><thead><tr><th>ساعت ثبت</th><th>سالن</th><th>شیفت</th><th>لات / سریال</th><th>محصول</th><th>مقصر (ایستگاه · روز)</th><th>انجام‌دهنده</th><th>به عدد</th><th>علت</th><th>ثبت‌کننده</th><th></th></tr></thead><tbody>
   ${r.rows.map(x=>`<tr><td class="mono">${esc(x.t.slice(11))}</td><td>${x.hall==="3"?"۳":"۲"}</td><td>${esc(x.shift)}</td><td class="mono">${esc(x.lot)}${x.serial?` #${esc(x.serial)}`:""}</td><td>${esc(x.product)}</td><td><b>${esc(x.fp)}</b> <span class="hint">${esc(x.fst)} · ${esc(x.fday)}</span></td><td>${x.dp?`${esc(x.dp)} <span class="hint">${esc(x.dst)}</span>`:"—"}</td><td class="n"><b>${fa(x.pcs)}</b>${x.hall==="2"?` <span class="hint">(${fa(x.packs)}×${fa(x.per)})</span>`:""}</td><td>${esc(x.reason)}${x.note?` <span class="hint">${esc(x.note)}</span>`:""}</td><td>${esc(x.by)}</td><td><button class="btn sm" data-rwdel="${x.id}">حذف</button></td></tr>`).join("")}</tbody></table></div>`;}
-$("#rwList").addEventListener("click",async e=>{const b=e.target.closest("[data-rwdel]");if(!b)return;if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="برای حذف دوباره بزنید";return;}const r=await api("delRework",{id:+b.dataset.rwdel});if(!r.ok){b.textContent=r.error;return;}rwLoad();});
+$("#rwList").addEventListener("click",async e=>{const b=e.target.closest("[data-rwdel]");if(!b)return;if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="برای حذف دوباره بزنید";return;}const r=await api("delRework",{id:+b.dataset.rwdel});if(!r.ok){b.textContent=r.error;return;}rwLoad();rsLoad();});
+// خلاصه: ماتریس محصول × علت
+$("#rsGo").onclick=rsLoad;$("#rsHall").addEventListener("change",rsLoad);
+async function rsLoad(){const r=await api("reworkSummary",{from:$("#rsFrom").value,to:$("#rsTo").value,hall:$("#rsHall").value});if(!r.ok)return msg("#rsOut",esc(r.error),"bad");$("#rsFrom").value=r.from;$("#rsTo").value=r.to;
+  if(!r.count)return msg("#rsOut",`از ${esc(r.from)} تا ${esc(r.to)} دوباره‌کاری ثبت نشده است.`,"ok");const cell=(p,c)=>r.cells.find(x=>x.product===p&&x.reason===c);
+  $("#rsOut").innerHTML=`<p class="hint">جمع: <b>${fa(r.total)} عدد</b> در ${fa(r.count)} ثبت · بیشترین علت: <b>${esc(r.reasons[0].name)}</b> (${fa(Math.round(r.reasons[0].pcs/r.total*100))}٪) · بیشترین محصول: <b>${esc(r.products[0].name)}</b></p>
+  <div class="tw"><table><thead><tr><th>محصول \ علت</th>${r.reasons.map(c=>`<th class="n">${esc(c.name)}</th>`).join("")}<th class="n">جمع</th></tr></thead><tbody>
+  ${r.products.map(p=>`<tr><td><b>${esc(p.name)}</b></td>${r.reasons.map(c=>{const x=cell(p.name,c.name);return`<td class="n">${x?`${fa(x.pcs)} <span class="hint">(${fa(x.n)} بار)</span>`:'<span class="hint">—</span>'}</td>`;}).join("")}<td class="n"><b>${fa(p.pcs)}</b></td></tr>`).join("")}
+  <tr class="subtot"><td>جمع</td>${r.reasons.map(c=>`<td class="n"><b>${fa(c.pcs)}</b> <span class="hint">${fa(Math.round(c.pcs/r.total*100))}٪</span></td>`).join("")}<td class="n"><b>${fa(r.total)}</b></td></tr></tbody></table></div>
+  <h4 style="margin:14px 0 6px">اپراتورهایی که باعث دوباره‌کاری بوده‌اند</h4><div class="opchips">${r.ops.slice(0,12).map((o,i)=>`<span class="opchip${i<3?" top":""}"><b>${esc(o.name)}</b> <span class="hint">${esc(o.station)}</span> · ${fa(o.pcs)} عدد · ${fa(o.n)} بار <span class="hint">(${esc(o.top)})</span></span>`).join("")}${r.ops.length>12?`<span class="hint">و ${fa(r.ops.length-12)} نفر دیگر</span>`:""}</div>`;}
 // گزارش «دوباره‌کاری هر نفر»
 async function drawRework(){$("#rOut").innerHTML='<p class="hint">در حال خواندن…</p>';const r=await api("reworkReport",{from:$("#rFrom").value,to:$("#rTo").value});if(!r.ok)return msg("#rOut",esc(r.error),"bad");
   if(!r.people.length){$("#rOut").innerHTML=`<div class="msg ok" style="margin-top:12px">از ${esc(r.from)} تا ${esc(r.to)} دوباره‌کاری ثبت نشده است.</div>`;return;}
@@ -1422,14 +1446,14 @@ function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return d
     return`<div class="kpi"><div class="kt">${s} <i>(به ${u})</i></div>
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>${pl!==undefined?"تارگت شیفت‌ها":"تارگت"}</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
-      ${s.startsWith("QC")?`<small style="margin-top:4px">ریجکت: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`:`<small style="margin-top:4px">${s==="تست"?"ریجکت تست (از عملکرد مونتاژکار کم شده)":"کسر ریجکت از عملکرد"}: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`}${pendLine(L,u)}${qLine(a,L.reduce((x,p)=>x+p.rej,0),s==="تست"||s.startsWith("QC"))}${lastLine(r.last&&r.last[s])}</div>`;}).join("");}).join("");
+      ${s.startsWith("QC")?`<small style="margin-top:4px">ریجکت: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`:`<small style="margin-top:4px">${s==="تست"?"ریجکت تست (از عملکرد مونتاژکار کم شده)":"کسر ریجکت از عملکرد"}: ${fa(L.reduce((x,p)=>x+p.rej,0))} ${u}</small>`}${pendLine(L,u)}${s.startsWith("QC")?"":rwLine(r,s,who)}${lastLine(r.last&&r.last[s])}</div>`;}).join("");}).join("");
   // کارت‌های سالن ۳: جمع شیفت‌ها (تارگت از برنامه‌ی هر شیفت یا پیش‌فرض تنظیمات)
   const kp3=H3ST.map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const L=who?L0:(r.shiftSum||[]).filter(x=>x.station===s);
     const a=L.reduce((x,p)=>x+(p.packs||0),0),hasT=!who&&L.some(p=>p.target!==null&&p.target!==undefined),t=hasT?L.reduce((x,p)=>x+(p.target||0),0):0,rj=L.reduce((x,p)=>x+(p.rej||0),0);const pc=t?Math.round(a/t*1000)/10:null;
     return`<div class="kpi"><div class="kt">${s} <i>(به عدد · سالن ۳)</i></div>
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>تارگت شیفت‌ها</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
       <div class="kp">${pc===null?'<span class="hint">تارگت ندارد</span>':`<div class="bar"><i class="${pc>=100?"ok":pc<85?"bad":""}" style="width:${Math.min(100,pc)}%"></i></div><span>تحقق ${fa(pc)}٪</span>`}</div>
-      <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small>${pendLine(L,"عدد")}${qLine(a,rj,false)}</div>`;}).join("");
+      <small style="margin-top:4px">ریجکت (از عملکرد کم شده): ${fa(rj)} عدد</small>${pendLine(L,"عدد")}${rwLine(r,s,who)}</div>`;}).join("");
   const hg=(n,sub,c)=>c.trim()?`<section class="hallgrp h${n}"><div class="hallhd2"><span class="hallbadge">سالن ${n==="2"?"۲":"۳"}</span><span class="hint">${sub}</span></div><div class="kpis3">${c}</div></section>`:"";
   let h=prodNote(r)+`<div class="hallwrap">${hg("2","مونتاژ · تست · پیچش",kp)}${hg("3","جت پرینتر · دوخت · کارتن‌گذاری",kp3)}</div>`;
   // جدول اصلی: هر نفر، ایستگاه‌هایش زیر هم، و جمع اگر بیش از یک ایستگاه دارد
