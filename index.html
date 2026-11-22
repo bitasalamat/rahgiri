@@ -494,7 +494,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.09.01-a";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.09.01-b";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -837,7 +837,8 @@ const H={
     const plan={},planSh={};days.forEach(day=>Object.entries(PL(day)).forEach(([k,v])=>{const[st,c,sh]=k.split("|");if(code&&c!==code)return;const u=((DB.stTargets[day]||{})[st]||{}).u||"عدد";
       plan[st+"|"+u]=(plan[st+"|"+u]||0)+ +v;const k2=day+"|"+st+"|"+sh+"|"+u;planSh[k2]=(planSh[k2]||0)+ +v;}));
     const sb={};const B=(date,st,sh,unit)=>{const k=date+"|"+st+"|"+sh+"|"+unit;return sb[k]||(sb[k]={date,station:st,shift:sh,unit,target:0,hasT:false,packs:0,rej:0,pend:0,people:new Set()});};
-    daily.forEach(r=>{if(r.target===null)return;const o=B(r.date,r.station,r.shift,r.unit);if(planSh[r.date+"|"+r.station+"|"+r.shift+"|"+r.unit]===undefined)o.target+=r.target;o.hasT=true;o.people.add(r.name);});
+    // تارگت شیفت فقط از «برنامه‌ی تولید» (هر محصول × شیفت × ایستگاه) و برای سالن ۳ از تنظیمات می‌آید؛ از جمع تارگت افراد ساخته نمی‌شود
+    daily.forEach(r=>{const o=B(r.date,r.station,r.shift,r.unit);o.people.add(r.name);});
     Object.values(actualsS(f,t,code,qs,basis)).forEach(a=>{const unit=unitOf(a.name,a.station,a.date);const o=B(a.date,a.station,a.shift,unit);o.packs+=amt(a,unit);o.rej+=ramt(a,unit);o.pend+=pamt(a,unit);o.people.add(a.name);});
     // سالن ۳ (جت پرینتر، دوخت، کارتن‌گذاری): عملکرد هر شیفت = جمع «تعداد» ثبت‌ها، منهای ریجکت
     // (جت پرینتر و دوخت با اپراتور از actualsS آمده‌اند؛ اینجا فقط ثبت‌های بدون اپراتور و کارتن‌گذاری)
@@ -953,7 +954,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.09.01-a";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.09.01-b";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}return r;}
@@ -1454,7 +1455,7 @@ function drawHistory(){const who=$("#rWho").value;const r=repV();
 function drawReport(){if(RVIEW==="w")return drawRework();if(RVIEW==="h")return drawHistory();if(RVIEW==="s")return drawShift();const r=repV(),who=$("#rWho").value,mineP=r.people.filter(p=>!who||p.name===who);
   // کارت هر ایستگاه: عملکرد در برابر تارگت
   const kp=[...rStn().filter(s=>!s.startsWith("QC")),...rStn().filter(s=>s.startsWith("QC"))].map(s=>{const L0=mineP.filter(p=>p.station===s);if(who&&!L0.length)return"";const us=[...new Set([...L0.map(p=>p.unit),...(who?[]:Object.keys(r.plan||{}).filter(k=>k.split("|")[0]===s).map(k=>k.split("|")[1]))])];if(!us.length)us.push("عدد");
-    return us.map(u=>{const L=L0.filter(p=>p.unit===u);const pl=who?undefined:(r.plan||{})[s+"|"+u];const t=pl!==undefined?pl:L.reduce((a,p)=>a+(p.target||0),0),a=L.reduce((x,p)=>x+p.packs,0);
+    return us.map(u=>{const L=L0.filter(p=>p.unit===u);const pl=who?undefined:(r.plan||{})[s+"|"+u];const t=pl!==undefined?pl:(who?L.reduce((a,p)=>a+(p.target||0),0):0),a=L.reduce((x,p)=>x+p.packs,0);
     const pc=t?Math.round(a/t*1000)/10:null;
     return`<div class="kpi"><div class="kt">${s} <i>(به ${u})</i></div>
       <div class="kg"><div><em>عملکرد</em><strong>${fa(a)}</strong></div><div><em>${pl!==undefined?"تارگت شیفت‌ها":"تارگت"}</em><strong>${t?fa(t):"—"}</strong></div><div><em>انحراف</em><strong>${devCell(t?a-t:null)}</strong></div></div>
