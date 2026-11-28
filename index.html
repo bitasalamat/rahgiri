@@ -305,7 +305,8 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
         <h2><span class="step">۳</span>ثبت کارتن‌گذاری</h2>
         <p class="sub">شیفت، محصول، تاریخ تولید، لات نامبر و تعداد. شیفت بعد از هر ثبت می‌ماند.</p>
         <div class="grid">
-          <div class="f"><label for="x_shift">شیفت<span class="req">*</span></label><select id="x_shift" data-req="شیفت" data-shift="1"></select></div>
+          <div class="f"><label for="x_shift">شیفت<span class="req">*</span> <span class="hint">(از تنظیمات اپراتور)</span></label><select id="x_shift" data-req="شیفت" data-shift="1"></select></div>
+          <div class="f"><label for="x_op">اپراتور<span class="req">*</span></label><select id="x_op" data-req="اپراتور کارتن‌گذاری" data-role="کارتن‌گذاری"></select></div>
           <div class="f"><label for="x_code">محصول<span class="req">*</span></label><select id="x_code" data-search data-req="محصول"></select></div>
           <div class="f"><label for="x_date">تاریخ تولید<span class="req">*</span></label><input id="x_date" class="ltr" placeholder="1405/08/13" data-req="تاریخ تولید" data-kind="date"></div>
           <div class="f"><label for="x_lot">لات نامبر<span class="req">*</span></label><input id="x_lot" class="ltr" placeholder="IS261104" data-req="لات نامبر" data-kind="lot"></div>
@@ -446,7 +447,7 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
           <div class="f"><label for="atTime">ساعت دستی <span class="hint">(خالی: شروع = ساعت شیفت، بقیه = الان)</span></label><input id="atTime" type="time" class="ltr" style="width:120px"></div>
         </div><p class="hint" id="atPosDesc" style="margin:4px 0 0"></p><div>
         </div>
-        <div class="atbulk" id="atBulk" hidden><b id="atSelN"></b> نفر انتخاب شده: <button class="btn sm p" data-ab="start">شروع</button><button class="btn sm" data-ab="move">جابه‌جایی</button><button class="btn sm" data-ab="stop">توقف</button><button class="btn sm" data-ab="resume">ادامه</button><button class="btn sm" data-ab="end">پایان</button><button class="btn sm" data-ab="leave">مرخصی روزانه</button><button class="btn sm" id="atClr">لغو انتخاب</button></div>
+        <div class="atbulk" id="atBulk" hidden><b id="atSelN"></b> نفر انتخاب شده: <button class="btn sm p" data-ab="start">شروع</button><button class="btn sm" data-ab="move">جابه‌جایی</button><button class="btn sm" data-ab="stop">توقف</button><button class="btn sm" data-ab="resume">ادامه</button><button class="btn sm" data-ab="end">پایان</button><button class="btn sm" data-ab="leave">مرخصی روزانه</button><button class="btn sm atUndo" id="atBUndo" title="آخرین ثبتِ هر نفرِ انتخاب‌شده برداشته می‌شود">↶ برگشت</button><button class="btn sm" id="atClr">لغو انتخاب</button></div>
         <div id="atMsg"></div><div id="atOut"></div>
       </div>
       <div class="card">
@@ -552,7 +553,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.09.07-f";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.09.07-g";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -674,8 +675,8 @@ function actualsS(from,to,code,qs,basis){const m={};const Q=k=>!qs||qs.includes(
   DB.coil.forEach(r=>{const d=D(r),per=perOf(r),sh=shiftOf(r,r.coil),rj=r.result==="ریجکت",pd=r.result===PEND;
     // ریجکت QC پیچش از عملکرد پیچش‌کار کم می‌شود؛ QC کار هم بابت بازرسی عملکرد می‌گیرد
     add(d,"پیچش",r.coil,sh,rj||pd?0:r.packs,per,rj?r.packs:0,r.code,pd?r.packs:0);if(r.qc&&Q("coil"))add(d,"QC پیچش",r.qc,sh,pd?0:r.packs,per,rj?r.packs:0,r.code,pd?r.packs:0);});
-  // سالن ۳: عملکرد هر اپراتور جت پرینتر و دوخت (به عدد)؛ ریجکت از عملکرد خودش کم می‌شود. کارتن‌گذاری اپراتور ندارد.
-  [["jet","جت پرینتر"],["sew","دوخت"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{if(!r.op||!r.shift)return;const n=+r.packs||0,rj=r.result==="ریجکت",pd=r.result===PEND;add(D(r),st,r.op,r.shift,rj||pd?0:n,1,rj?n:0,r.code,pd?n:0);}));
+  // سالن ۳: عملکرد هر اپراتور جت پرینتر، دوخت و کارتن‌گذاری (به عدد)؛ ریجکت از عملکرد خودش کم می‌شود. ثبت‌های قدیمی کارتن‌گذاری بدون اپراتور فقط در عملکرد شیفت می‌آیند.
+  [["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{if(!r.op||!r.shift)return;const n=+r.packs||0,rj=r.result==="ریجکت",pd=r.result===PEND;add(D(r),st,r.op,r.shift,rj||pd?0:n,1,rj?n:0,r.code,pd?n:0);}));
   // دوباره‌کاری سالن ۲: از عملکرد فرد مقصر در روز تولید کم و به عملکرد انجام‌دهنده در روز دوباره‌کاری اضافه می‌شود
   const mk=(date,st,name,sh,f,v)=>{const o=m[date+"|"+st+"|"+name+"|"+sh];if(o)o[f]=(o[f]||0)+v;};
   (DB.rework||[]).forEach(r=>{if(r.hall!=="2")return;const per=+r.per||1,n=+r.packs||0,fsh=r.fshift||defShift(r.fp);add(r.fday,r.fst,r.fp,fsh,-n,per,0,r.code);mk(r.fday,r.fst,r.fp,fsh,"rw",n*per);
@@ -692,7 +693,7 @@ const PEND="تحت بررسی",RES3=["تایید","ریجکت",PEND],QCK=["asm",
 const qcRow=(k,r)=>{const H3=k==="jet"||k==="sew",per=H3?1:perOf(r);return{k,kind:QCN[k],hall:H3?"3":"2",id:r.id,t:r.t,day:recDay(r),lot:r.lot,serial:r.serial||"",product:(prod(r.code)||{}).name||r.code,person:bperson(k,r)||"",qc:r.qc||"",packs:+r.packs||0,per,pcs:(+r.packs||0)*per,unit:H3?"عدد":"بسته",result:r.result,reason:r.reason||"",by:r.by||"",rvBy:r.rvBy||"",rvAt:r.rvAt||"",rvNote:r.rvNote||""};};
 const RWK={"مونتاژ":"asm","تست":"test","پیچش":"coil","جت پرینتر":"jet","دوخت":"sew"},RWH={"2":["مونتاژ","تست","پیچش"],"3":["جت پرینتر","دوخت","کارتن‌گذاری"]};
 const bpcs=(k,r)=>["jet","sew","carton"].includes(k)?(+r.packs||0):(+r.packs||0)*perOf(r);
-const bperson=(k,r)=>({asm:r.asm,test:r.test,coil:r.coil,jet:r.op,sew:r.op,carton:""})[k]||"";
+const bperson=(k,r)=>({asm:r.asm,test:r.test,coil:r.coil,jet:r.op,sew:r.op,carton:r.op})[k]||"";
 function balSteps(l){const steps=BST.map(([k,name])=>{const R=DB[k].filter(r=>r.lot===l);const rej=R.filter(r=>r.result==="ریجکت").reduce((s,r)=>s+bpcs(k,r),0),pend=R.filter(r=>r.result===PEND).reduce((s,r)=>s+bpcs(k,r),0),all=R.reduce((s,r)=>s+bpcs(k,r),0);
   return{k,name,n:R.length,all,ok:all-rej-pend,rej,pend,last:R.reduce((m,r)=>!m||r.t>m?r.t:m,"")};});steps.forEach((s0,i)=>{if(i)s0.wait=steps[i-1].ok-s0.all;});return steps;}
 // عملکرد سالن ۳ هر «ایستگاه|محصول|شیفت» در روز کاری (تعداد تاییدشده، به عدد)
@@ -739,10 +740,10 @@ const H={
     const r={id:DB.nextId++,t:nowJ(),shift:d.shift,code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),packs:parseInt(d.packs,10),op:d.op,qc:d.qc,result:d.result,reason:String(d.reason||"").trim(),by:u.name};DB.jet.push(r);
     logEv(u.name,"ثبت جت پرینتر",`لات ${r.lot} · ${r.packs} عدد · ${r.result}${r.reason?" ("+r.reason+")":""} · اپراتور: ${r.op} · QC: ${r.qc} · شیفت ${r.shift}`);save();return ok({rec:r});});},
   // کارتن‌گذاری: شیفت، محصول، تاریخ تولید، لات و تعداد
-  addCarton(d){return needSt(["کارتن‌گذاری"],u=>{const e=check(d,[["shift","شیفت"],["code","محصول"],["date","تاریخ تولید","date"],["lot","لات نامبر"],["packs","تعداد","int"]]);if(e)return e;
-    if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");
-    const r={id:DB.nextId++,t:nowJ(),shift:d.shift,code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),packs:parseInt(d.packs,10),by:u.name};DB.carton.push(r);
-    logEv(u.name,"ثبت کارتن‌گذاری",`لات ${r.lot} · ${r.packs} عدد · شیفت ${r.shift}`);save();return ok({rec:r});});},
+  addCarton(d){return needSt(["کارتن‌گذاری"],u=>{const e=check(d,[["shift","شیفت"],["op","اپراتور کارتن‌گذاری"],["code","محصول"],["date","تاریخ تولید","date"],["lot","لات نامبر"],["packs","تعداد","int"]]);if(e)return e;
+    if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");const p=prod(d.code);if(!p)return err("محصول معتبر نیست.");if(!isUser(d.op,"کارتن‌گذاری"))return err("اپراتور کارتن‌گذاری در فهرست نیست.");
+    const r={id:DB.nextId++,t:nowJ(),shift:d.shift,code:p.code,product:p.name,date:normDate(d.date),lot:normLot(d.lot),packs:parseInt(d.packs,10),op:d.op,by:u.name};DB.carton.push(r);
+    logEv(u.name,"ثبت کارتن‌گذاری",`لات ${r.lot} · ${r.packs} عدد · اپراتور: ${r.op} · شیفت ${r.shift}`);save();return ok({rec:r});});},
   // دوخت: اپراتور، محصول، لات، سریال و نتیجه (تایید/ریجکت)
   addSew(d){return needSt(["دوخت"],u=>{const e=check(d,[["shift","شیفت"],["code","محصول"],["lot","لات نامبر"],["op","اپراتور دوخت"],["packs","تعداد","int"],["result","نتیجه"]]);if(e)return e;
     if(!RES3.includes(d.result))return err("نتیجه (تایید یا ریجکت) را انتخاب کنید.");if(!DB.shifts.includes(d.shift))return err("شیفت معتبر نیست.");
@@ -1006,7 +1007,7 @@ const H={
     Object.values(actualsS(f,t,code,qs,basis)).forEach(a=>{const unit=unitOf(a.name,a.station,a.date);const o=B(a.date,a.station,a.shift,unit);o.packs+=amt(a,unit);o.rej+=ramt(a,unit);o.pend+=pamt(a,unit);o.people.add(a.name);});
     // سالن ۳ (جت پرینتر، دوخت، کارتن‌گذاری): عملکرد هر شیفت = جمع «تعداد» ثبت‌ها، منهای ریجکت
     // (جت پرینتر و دوخت با اپراتور از actualsS آمده‌اند؛ اینجا فقط ثبت‌های بدون اپراتور و کارتن‌گذاری)
-    [["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{const d0=basis==="prod"?r.date:recDay(r);if(d0<f||d0>t||(code&&r.code!==code)||!r.shift||(k!=="carton"&&r.op))return;
+    [["jet","جت پرینتر"],["sew","دوخت"],["carton","کارتن‌گذاری"]].forEach(([k,st])=>(DB[k]||[]).forEach(r=>{const d0=basis==="prod"?r.date:recDay(r);if(d0<f||d0>t||(code&&r.code!==code)||!r.shift||r.op)return;
       const n=+r.packs||0,rj=r.result==="ریجکت",pd=r.result===PEND;const o=B(d0,st,r.shift,"عدد");o.packs+=rj||pd?0:n;o.rej+=rj?n:0;o.pend+=pd?n:0;if(r.op)o.people.add(r.op);}));
     // تارگت ایستگاه و شیفت از «برنامه‌ی تولید» هر شیفت خوانده می‌شود (هر جا برنامه ثبت شده باشد)
     Object.entries(planSh).forEach(([k,v])=>{const[d0,st,sh,u]=k.split("|");const o=B(d0,st,sh,u);o.target=v;o.hasT=true;o.plan=true;});
@@ -1061,7 +1062,7 @@ const H={
         rows:DB.coil.map(r=>[r.t,shiftOf(r,r.coil),r.product,r.code,r.date,r.lot,r.serial||"",r.asm,r.test,r.coil,r.qc||"",r.result||"تایید",r.reason||"",r.packs,r.per,r.packs*r.per,r.by])},
       {name:"جت پرینتر",header:["زمان ثبت","شیفت","اپراتور","محصول","کد","تاریخ تولید","لات نامبر","تعداد","QC کار","نتیجه‌ی QC","علت ریجکت","ثبت‌کننده"],rows:DB.jet.map(r=>[r.t,r.shift||"",r.op||"",r.product,r.code,r.date,r.lot,+r.packs||0,r.qc||"",r.result||"",r.reason||"",r.by])},
       {name:"دوخت",header:["زمان ثبت","شیفت","محصول","کد","لات نامبر","سریال","اپراتور دوخت","تعداد","نتیجه","علت ریجکت","ثبت‌کننده"],rows:DB.sew.map(r=>[r.t,r.shift,r.product,r.code,r.lot,r.serial,r.op,+r.packs||0,r.result,r.reason||"",r.by])},
-      {name:"کارتن‌گذاری",header:["زمان ثبت","شیفت","محصول","کد","تاریخ تولید","لات نامبر","تعداد","ثبت‌کننده"],rows:DB.carton.map(r=>[r.t,r.shift||"",r.product,r.code,r.date,r.lot,+r.packs||0,r.by])},
+      {name:"کارتن‌گذاری",header:["زمان ثبت","شیفت","اپراتور","محصول","کد","تاریخ تولید","لات نامبر","تعداد","ثبت‌کننده"],rows:DB.carton.map(r=>[r.t,r.shift||"",r.op||"",r.product,r.code,r.date,r.lot,+r.packs||0,r.by])},
       {name:"رهگیری لات",header:["لات نامبر","محصول","تاریخ تولید","مونتاژشده (بسته)","تایید QC","ریجکت","پیچش‌شده","در انتظار پیچش"],
         rows:lots.map(l=>{const i=lotInfo(l);return[l,(prod(i.code)||{}).name||i.code,i.date,i.asmPacks,i.okPacks,i.rejPacks,i.coilPacks,Math.max(0,i.okPacks-i.coilPacks)];})},
       {name:"دوباره‌کاری",header:["زمان ثبت","روز کاری دوباره‌کاری","سالن","شیفت","محصول","لات نامبر","سریال","ایستگاه مقصر","فرد مقصر","روز کاری مقصر","ایستگاه انجام‌دهنده","انجام‌دهنده","تعداد","در هر بسته","به عدد","علت","توضیح","ثبت‌کننده"],rows:(DB.rework||[]).map(r=>[r.t,r.day,r.hall,r.shift,r.product,r.lot,r.serial,r.fst,r.fp,r.fday,r.dst,r.dp,r.packs,r.per,r.pcs,r.reason,r.note,r.by])},
@@ -1120,7 +1121,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.09.07-f";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.09.07-g";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}if(r.ok&&/^(attEvent|attDel|attSegs|addRework|delRework)$/.test(fn))offRefresh();return r;}
@@ -1157,7 +1158,7 @@ const prodOpts=()=>`<option value="">انتخاب کنید</option>`+META.produc
 // اول افرادی که در تنظیمات برای این ایستگاه تعریف شده‌اند، بعد بقیه‌ی اپراتورها (برای وقتی که کسی موقتاً جای دیگری کار می‌کند)
 function peopleOpts(role,self){
   // دوخت: فهرست پرسنل (بدون QC کارها)
-  if(role==="دوخت"||role==="جت پرینتر"){const qc=new Set(META.people.QC||[]);return`<option value="">انتخاب کنید</option><optgroup label="پرسنل">`+(META.ops||[]).filter(n=>!qc.has(n)).map(n=>`<option>${esc(n)}</option>`).join("")+`</optgroup>`;}
+  if(role==="دوخت"||role==="جت پرینتر"||role==="کارتن‌گذاری"){const qc=new Set(META.people.QC||[]);return`<option value="">انتخاب کنید</option><optgroup label="پرسنل">`+(META.ops||[]).filter(n=>!qc.has(n)).map(n=>`<option>${esc(n)}</option>`).join("")+`</optgroup>`;}
   const list=META.people[role]||[];const lock=self&&!isAdmin()&&ME.st.includes(role);if(lock)return`<option>${esc(ME.name)}</option>`;
   const others=(META.ops||[]).filter(n=>!list.includes(n));const o=n=>`<option>${esc(n)}</option>`;
   return`<option value="">انتخاب کنید</option>`+(list.length?`<optgroup label="ایستگاه ${role}">${list.map(o).join("")}</optgroup>`:"")+(others.length?`<optgroup label="سایر اپراتورها">${others.map(o).join("")}</optgroup>`:"");}
@@ -1283,7 +1284,7 @@ function setPer(k){const el=$("#"+k+"_per");if(!el)return;
 document.addEventListener("input",e=>{const id=e.target.id||"";if(/^[atc]_per$/.test(id)&&e.isTrusted)delete e.target.dataset.auto;
   if(/^[jwx]_packs$/.test(id)){const h=$(`.numhint[data-for="${id}"]`);if(h)h.textContent=e.target.value?fa(e.target.value)+" عدد":"";}},true);
 // شیفت هر فرم از شیفت پیش‌فرضِ کارگر اصلی همان ایستگاه (تنظیمات) خوانده می‌شود؛ قابل تغییر است
-const WORKER={a:"#a_asm",t:"#t_test",c:"#c_coil",w:"#w_op",j:"#j_op"};
+const WORKER={a:"#a_asm",t:"#t_test",c:"#c_coil",w:"#w_op",j:"#j_op",x:"#x_op"};
 function shiftFromWorker(k){if(!WORKER[k]||!$("#"+k+"_shift"))return validate(k);const n=$(WORKER[k]).value,sh=META.shiftOf[n],el=$("#"+k+"_shift");if(sh&&META.shifts.includes(sh)){el.value=sh;el.classList.add("auto");delete el.dataset.touched;el.classList.remove("invalid");}validate(k);}
 function validate(k,show){const miss=[];fields(k).forEach(el=>{const v=String(el.value||"").trim();let bad=!v;
     if(!bad&&el.dataset.kind==="int")bad=!(parseInt(v,10)>=1);
@@ -1358,7 +1359,7 @@ async function loadRecent(date){offRefresh();const my=++LRSEQ;const r=await api(
   const c=k=>r.rows.filter(x=>x.kind===k).length;
   $("#recentSub").textContent=`${fa(r.rows.length)} ثبت — سالن ۲: مونتاژ ${fa(c("مونتاژ"))} · تست و QC ${fa(c("تست و QC"))} · پیچش ${fa(c("پیچش"))} — سالن ۳: جت پرینتر ${fa(c("جت پرینتر"))} · دوخت ${fa(c("دوخت"))} · کارتن‌گذاری ${fa(c("کارتن‌گذاری"))}${r.all?" (همه‌ی آمارگیرها)":" — ویرایش و حذف فقط برای ثبت‌های خودتان."}`;
   REC.n=30;renderRecent();}
-const pplOf=x=>x.kind==="دوخت"?`${x.op} (دوخت)`:x.kind==="جت پرینتر"?[x.op?`${x.op} (جت)`:"",x.qc?`${x.qc} (QC)`:""].filter(Boolean).join(" · ")||"—":x.kind==="کارتن‌گذاری"?"—":x.kind==="مونتاژ"?`${x.asm}${x.qc?` · ${x.qc} (QC)`:""}`:x.kind==="پیچش"?`${x.coil} (پیچش) · ${x.qc||"—"} (QC)`:`${x.test} (تست) · ${x.qc} (QC)`;
+const pplOf=x=>x.kind==="دوخت"?`${x.op} (دوخت)`:x.kind==="جت پرینتر"?[x.op?`${x.op} (جت)`:"",x.qc?`${x.qc} (QC)`:""].filter(Boolean).join(" · ")||"—":x.kind==="کارتن‌گذاری"?(x.op?`${x.op} (کارتن)`:"—"):x.kind==="مونتاژ"?`${x.asm}${x.qc?` · ${x.qc} (QC)`:""}`:x.kind==="پیچش"?`${x.coil} (پیچش) · ${x.qc||"—"} (QC)`:`${x.test} (تست) · ${x.qc} (QC)`;
 // خلاصه: ثبت‌های هم‌مرحله، هم‌لات و هم‌نفر یک ردیف می‌شوند؛ با کلیک، جزئیات همان گروه باز می‌شود
 function renderRecent(){const K=["همه",...HALLK[HALL]];
   $("#recKind").innerHTML=K.map(k=>`<button class="chip" data-k="${k}" aria-pressed="${k===REC.kind}">${k}${k==="همه"?"":" ("+fa(RECS.filter(x=>x.kind===k).length)+")"}</button>`).join("");
@@ -1502,7 +1503,14 @@ $("#atOut").addEventListener("click",e=>{const tr=e.target.closest("tr[data-n]")
   const del=e.target.closest("[data-atdel]");if(del){if(!del.classList.contains("armed")){del.classList.add("armed");del.textContent="مطمئنید؟";return;}api("attDel",{id:+del.dataset.atdel}).then(r=>{if(!r.ok)msg("#atMsg",esc(r.error),"bad");initAtt();});}});
 $("#atOut").addEventListener("change",e=>{if(e.target.id==="atAll"){$$("#atOut tr[data-n]").forEach(tr=>{e.target.checked?ATSEL.add(tr.dataset.n):ATSEL.delete(tr.dataset.n);});return atDraw();}
   if(e.target.classList.contains("atC")){const n=e.target.closest("tr").dataset.n;e.target.checked?ATSEL.add(n):ATSEL.delete(n);atDraw();}});
-$("#atBulk").addEventListener("click",e=>{const b=e.target.closest("[data-ab]");if(b)return atSend([...ATSEL],b.dataset.ab);if(e.target.id==="atClr"){ATSEL.clear();atDraw();}});
+$("#atBulk").addEventListener("click",async e=>{const b=e.target.closest("[data-ab]");if(b)return atSend([...ATSEL],b.dataset.ab);if(e.target.id==="atClr"){ATSEL.clear();atDraw();return;}
+  // برگشت دسته‌جمعی: آخرین ثبت هر نفر انتخاب‌شده (با تأیید دوم)
+  const u=e.target.closest("#atBUndo");if(!u)return;const L=[...ATSEL].map(n=>(ATB.rows.find(x=>x.name===n)||{events:[]})).filter(x=>x.events.length);
+  if(!L.length)return msg("#atMsg","نفرات انتخاب‌شده ثبتی ندارند که برگردد.","warn");
+  if(!u.classList.contains("armed")){u.classList.add("armed");u.textContent=`آخرین ثبت ${fa(L.length)} نفر برداشته شود؟`;setTimeout(()=>{if(u.isConnected){u.classList.remove("armed");u.textContent="↶ برگشت";}},5000);return;}
+  u.classList.remove("armed");u.textContent="↶ برگشت";u.disabled=true;const ok=[],bad=[];
+  for(const x of L){const r=await api("attDel",{id:x.events[x.events.length-1].id});(r.ok?ok:bad).push(r.ok?x.name:`${x.name}: ${r.error}`);}
+  u.disabled=false;msg("#atMsg",(ok.length?`آخرین ثبت ${fa(ok.length)} نفر برداشته شد: ${ok.map(esc).join("، ")}`:"")+(bad.length?`<br>انجام نشد — ${bad.map(esc).join(" · ")}`:""),bad.length?(ok.length?"warn":"bad"):"ok");initAtt();});
 ["#atShift","#atQ"].forEach(id=>$(id).addEventListener("input",atDraw));$("#atShift").addEventListener("change",atDraw);
 setInterval(()=>{if(current==="att"&&!document.hidden&&!ATSEL.size&&!ATOPEN)initAtt();},60000);
 // گزارش «ساعت کار»
@@ -1663,7 +1671,7 @@ function drawPkg(P){P.sew=P.sew||[];if(!P.coil.length&&!P.sew.length){$("#qOut")
   const F=x=>[["شیفت",esc(x.shift||"—")],["محصول",esc(x.product||"—")],["تاریخ تولید",`<span class="mono">${esc(x.date||"—")}</span>`],["لات نامبر",`<span class="mono">${esc(x.lot)}</span>`],["سریال تولید",`<span class="mono">${esc(x.serial)}</span>`],
     ["مونتاژکار",esc(x.asm||"—")],["تست‌کار",esc(x.test||"—")],["پیچش‌کار",esc(x.coil||"—")],["تعداد در هر بسته",fa(x.per)],["QC کار",esc(x.qc||"—")],["نتیجه‌ی QC",res(x)]];
   const SW=P.sew.map(x=>[["دوخت · اپراتور",esc(x.op)],["دوخت · نتیجه",res(x)],["دوخت · شیفت",esc(x.shift||"—")],["دوخت · زمان ثبت",`<span class="mono">${esc(x.t)}</span>`]]);
-  const H3=[["جت پرینتر",(P.jet||[]).length?`<span class="mono">${esc(P.jet[P.jet.length-1].t)}</span>${P.jet[P.jet.length-1].op?" · "+esc(P.jet[P.jet.length-1].op):""}${P.jet[P.jet.length-1].result?" "+res(P.jet[P.jet.length-1]):""}`:"—"],["کارتن‌گذاری",(P.carton||[]).length?`<span class="mono">${esc(P.carton[P.carton.length-1].t)}</span>`:"—"]];
+  const H3=[["جت پرینتر",(P.jet||[]).length?`<span class="mono">${esc(P.jet[P.jet.length-1].t)}</span>${P.jet[P.jet.length-1].op?" · "+esc(P.jet[P.jet.length-1].op):""}${P.jet[P.jet.length-1].result?" "+res(P.jet[P.jet.length-1]):""}`:"—"],["کارتن‌گذاری",(P.carton||[]).length?`<span class="mono">${esc(P.carton[P.carton.length-1].t)}</span>${P.carton[P.carton.length-1].op?" · "+esc(P.carton[P.carton.length-1].op):""}`:"—"]];
   const g3=`<h3 style="margin:16px 0 0">سالن ۳</h3><div class="pkgf">${[...[].concat(...SW),...H3].map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`;
   if(!P.coil.length){$("#qOut").innerHTML=`<p class="hint">در سالن ۲ (پیچش) برای این سریال ثبتی نیست.</p>`+g3;return;}
   $("#qOut").innerHTML=(P.sew.length||(P.jet||[]).length||(P.carton||[]).length?"<h3 style=\"margin:0\">سالن ۲</h3>":"")+P.coil.map((x,i)=>`${P.coil.length>1?`<p class="hint" style="margin:${i?"14px":"0"} 0 6px">ثبت ${fa(i+1)} از ${fa(P.coil.length)}</p>`:""}<div class="pkgf">${F(x).map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`).join("")+(P.sew.length||(P.jet||[]).length||(P.carton||[]).length?g3:"");}
