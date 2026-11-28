@@ -65,7 +65,10 @@ input.ltr{direction:ltr;text-align:left;font-family:Consolas,"Vazirmatn",monospa
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
 /* جدول‌های فهرستی: اسکرول جدا با عنوان ثابت (عنوان ستون‌ها و فیلترها بالا می‌مانند) */
 .tw{overflow:auto;max-height:min(72vh,680px);overscroll-behavior:contain}
-.tw thead{position:sticky;top:0;z-index:4}.tw thead th{background:var(--soft);box-shadow:inset 0 -1px 0 var(--line)}
+.tw thead{position:sticky;top:0;z-index:4}
+th.tsort{cursor:pointer;user-select:none}th.tsort:hover{color:var(--acc)}th.tsort::after{content:" ⇅";opacity:.35;font-size:11px}th.tsort.asc::after{content:" ▲";opacity:1;color:var(--acc)}th.tsort.desc::after{content:" ▼";opacity:1;color:var(--acc)}
+tr.tflt th{padding:3px 4px 6px}tr.tflt input{text-align:right;width:100%;min-width:52px;padding:3px 6px;font-size:12px;border-radius:6px;font-weight:400}tr.tflt input.on{border-color:var(--acc);background:var(--acc-soft)}
+.tcnt{font-size:12px;color:var(--muted);margin:4px 2px 0}.tw thead th{background:var(--soft);box-shadow:inset 0 -1px 0 var(--line)}
 .stbox .tw,.dfgrp .tw{max-height:none}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
@@ -553,7 +556,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.09.07-g";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.09.07-h";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -1121,7 +1124,7 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.09.07-g";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.09.07-h";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
 async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}if(r.ok&&/^(attEvent|attDel|attSegs|addRework|delRework)$/.test(fn))offRefresh();return r;}
@@ -1437,6 +1440,29 @@ function atDraw(){if(!ATB)return;const sh=$("#atShift").value,q=normFa($("#atQ")
     <td class="atAct">${B("start","شروع",x.state==="none"||x.state==="ended","p")}${B("move","جابه‌جایی",x.state==="work"||x.state==="stop")}${B("stop","توقف",x.state==="work")}${B("resume","ادامه",x.state==="stop","p")}${B("end","پایان",x.state==="work"||x.state==="stop")}${B("leave","مرخصی",x.state==="none")}${x.events.length?`<button class="btn sm ghost atUndo" data-atundo="${x.events[x.events.length-1].id}" title="آخرین ثبت این نفر برداشته می‌شود">↶ برگشت</button><button class="btn sm ghost" data-atlast="${x.events[x.events.length-1].id}" title="ساعت، ایستگاه، محصول یا علت توقفِ آخرین ثبت را عوض کنید">✎ اصلاح</button>`:""}<button class="btn sm ghost" data-ath="1">تاریخچه (${fa(x.events.length)})</button></td></tr>
     ${ATOPEN===x.name?`<tr class="atHist"><td colspan="7">${x.events.length?x.events.map(e=>`<span class="atEv">${esc(hm(e.at))} · ${esc(({start:"شروع",move:"جابه‌جایی",stop:"توقف",resume:"ادامه",end:"پایان",leave:"مرخصی"})[e.type])}${e.station?" · "+esc(e.station):""}${e.code&&e.type!=="stop"?" · "+esc(PN(e.code)):""}${e.reason?" · "+esc(e.reason):""} <span class="hint">(${esc(e.by)})</span> ${ATEDIT===e.id?atEdForm(e):`<button class="lnk" data-atedit="${e.id}">✎ اصلاح</button> <button class="lnk" data-atdel="${e.id}">حذف</button>`}</span>`).join(""):'<span class="hint">رویدادی ثبت نشده.</span>'}</td></tr>`:""}`;}).join("")}</tbody></table></div>`;
   $("#atBulk").hidden=!ATSEL.size;$("#atSelN").textContent=fa(ATSEL.size);}
+/* ---- مرتب‌سازی و فیلتر سرتیتر جدول‌های گزارش ----
+   کلیک روی سرتیتر: صعودی ← نزولی ← ترتیب اول. خانه‌ی زیر سرتیتر: فیلتر (متن، یا عدد با > و <، مثل ‎>100 یا ‎<80). */
+const TSTATE={};
+const tCell=td=>{const t=(td?td.innerText:"").trim();const n=t.replace(/[۰-۹]/g,c=>"۰۱۲۳۴۵۶۷۸۹".indexOf(c)).replace(/[٬,٪%\s]/g,"").replace(/[−–]/g,"-");
+  if(/^[+-]?\d+(\.\d+)?$/.test(n))return{n:+n,t};const m=n.match(/^(\d+):(\d\d)$/);if(m)return{n:+m[1]*60+ +m[2],t};const d=n.match(/^(\d+)دقیقه$/);if(d)return{n:+d[1],t};return{n:null,t};};
+function tApply(tb){const st=TSTATE[tb.dataset.tkey];if(!st)return;const body=tb.tBodies[0];const rows=[...body.rows];
+  rows.forEach(r=>{let show=true;st.f.forEach((f,i)=>{if(!show||!f)return;const c=tCell(r.cells[i]);const m=f.replace(/[۰-۹]/g,x=>"۰۱۲۳۴۵۶۷۸۹".indexOf(x)).match(/^\s*([<>]=?)\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if(m){if(c.n===null){show=false;return;}const v=+m[2];show=m[1]===">"?c.n>v:m[1]===">="?c.n>=v:m[1]==="<"?c.n<v:c.n<=v;}else show=normFa(c.t).includes(normFa(f));});r.hidden=!show;});
+  const sorted=rows.slice().sort((a,b)=>{if(st.col<0||!st.dir)return +a.dataset.ti-+b.dataset.ti;const x=tCell(a.cells[st.col]),y=tCell(b.cells[st.col]);
+    const v=x.n!==null&&y.n!==null?x.n-y.n:x.n!==null?-1:y.n!==null?1:x.t.localeCompare(y.t,"fa");return(v||(+a.dataset.ti-+b.dataset.ti))*(v?st.dir:1);});
+  sorted.forEach(r=>body.appendChild(r));
+  [...tb.tHead.rows[0].cells].forEach((th,i)=>{th.classList.toggle("asc",st.col===i&&st.dir===1);th.classList.toggle("desc",st.col===i&&st.dir===-1);});
+  const n=rows.filter(r=>!r.hidden).length,cnt=tb.parentElement.nextElementSibling;if(cnt&&cnt.classList.contains("tcnt"))cnt.textContent=st.f.some(Boolean)?`${fa(n)} ردیف از ${fa(rows.length)} (با فیلتر)`:"";}
+function tEnhance(tb){if(tb.dataset.tkey||!tb.tHead||!tb.tBodies[0]||tb.classList.contains("atrT")||tb.closest(".nosortT"))return;const hr=tb.tHead.rows[0];if(!hr||[...hr.cells].some(c=>c.colSpan>1))return;
+  const rows=[...tb.tBodies[0].rows];if(rows.length<2||rows.some(r=>[...r.cells].some(c=>c.colSpan>1)))return;
+  const key=(tb.closest("[id]")||{}).id+"|"+[...hr.cells].map(c=>c.textContent.trim()).join("|");tb.dataset.tkey=key;rows.forEach((r,i)=>r.dataset.ti=i);
+  const st=TSTATE[key]||(TSTATE[key]={col:-1,dir:0,f:[...hr.cells].map(()=>"")});
+  [...hr.cells].forEach((th,i)=>{if(!th.textContent.trim())return;th.classList.add("tsort");th.title="برای مرتب‌سازی کلیک کنید";th.addEventListener("click",()=>{if(st.col!==i){st.col=i;st.dir=1;}else st.dir=st.dir===1?-1:st.dir===-1?0:1;tApply(tb);});});
+  const fr=document.createElement("tr");fr.className="tflt";fr.innerHTML=[...hr.cells].map((th,i)=>th.textContent.trim()?`<th><input data-ti="${i}" dir="auto" placeholder="فیلتر" value="${esc(st.f[i]||"")}"${st.f[i]?' class="on"':""}></th>`:"<th></th>").join("");tb.tHead.appendChild(fr);
+  let tm;fr.addEventListener("input",e=>{const x=e.target.closest("input");if(!x)return;st.f[+x.dataset.ti]=x.value.trim();x.classList.toggle("on",!!x.value.trim());clearTimeout(tm);tm=setTimeout(()=>tApply(tb),150);});
+  const tw=tb.parentElement;if(tw&&!(tw.nextElementSibling&&tw.nextElementSibling.classList.contains("tcnt"))){const c=document.createElement("div");c.className="tcnt";tw.after(c);}
+  if(st.dir||st.f.some(Boolean))tApply(tb);}
+["#rOut","#atrOut"].forEach(id=>{const el=$(id);if(!el)return;let q=0;new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;el.querySelectorAll("table").forEach(tEnhance);});}).observe(el,{childList:true,subtree:true});});
 let ATEDIT=0;
 // فرم اصلاح یک رویداد: ساعت + (ایستگاه و محصول) یا (علت توقف)
 function atEdForm(e){const sm=e.type==="start"||e.type==="move",rs=e.type==="stop"||e.type==="leave";const R=(ATB&&ATB.reasons)||[];
