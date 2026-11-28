@@ -166,7 +166,8 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
 .attT tr.sel td{background:#eef4ff}.atAct{white-space:nowrap}.atAct .btn{margin:1px}.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
 .atEv,.atSeg{display:inline-block;margin:2px 3px;padding:2px 8px;border-radius:8px;background:var(--soft);font-size:12.5px}.atSeg.work{background:#e8f3ec}.atSeg.stop{background:#fff4e0}
 .btn.atUndo{color:var(--warn);border-color:#f0d9a8}.btn.atUndo.armed{background:var(--warn);color:#fff;border-color:var(--warn)}
-.atHist td{white-space:normal;line-height:2}.atHist td .atEv{white-space:nowrap}
+.atHist td{white-space:normal;line-height:2}
+.atrT tr.atrFirst td{border-top:2px solid var(--line)}.amT td{vertical-align:middle}.atHist td .atEv{white-space:nowrap}
 .lnk{border:0;background:none;color:var(--bad);cursor:pointer;font:inherit;font-size:12px;padding:0 2px}
 </style>
 </head>
@@ -445,6 +446,30 @@ input.jdate{cursor:pointer;background-image:linear-gradient(transparent,transpar
         <div class="atbulk" id="atBulk" hidden><b id="atSelN"></b> نفر انتخاب شده: <button class="btn sm p" data-ab="start">شروع</button><button class="btn sm" data-ab="move">جابه‌جایی</button><button class="btn sm" data-ab="stop">توقف</button><button class="btn sm" data-ab="resume">ادامه</button><button class="btn sm" data-ab="end">پایان</button><button class="btn sm" data-ab="leave">مرخصی روزانه</button><button class="btn sm" id="atClr">لغو انتخاب</button></div>
         <div id="atMsg"></div><div id="atOut"></div>
       </div>
+      <div class="card">
+        <h2>ثبت چند ایستگاه در یک شیفت</h2>
+        <p class="sub">اگر نفری در یک شیفت در چند ایستگاه کار کرده و لحظه‌ای ثبت نشده، همه را این‌جا یک‌جا وارد کنید: هر ردیف یک ایستگاه با ساعت شروع و پایان. اگر بین دو ردیف فاصله باشد، آن فاصله «توقف» حساب می‌شود. برای امروز می‌شود پایانِ ردیف آخر را خالی گذاشت (یعنی هنوز سر کار است).</p>
+        <div class="row" style="align-items:flex-end">
+          <div class="f"><label for="amN">نام</label><select id="amN" data-search="1" style="width:200px"></select></div>
+          <div class="f"><label for="amD">روز کاری</label><select id="amD" style="width:170px"></select></div>
+        </div>
+        <div class="tw" style="margin-top:10px"><table class="amT"><thead><tr><th>#</th><th>ایستگاه / پوزیشن</th><th>از ساعت</th><th>تا ساعت</th><th></th></tr></thead><tbody id="amRows"></tbody></table></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="amAdd">+ ایستگاه بعدی</button><button class="btn p" id="amGo">ثبت</button></div>
+        <div id="amMsg"></div>
+      </div>
+      <div class="card">
+        <h2>گزارش ساعت کار: کدام شیفت، کدام ایستگاه، از چه ساعتی تا چه ساعتی</h2>
+        <div class="row" style="align-items:flex-end">
+          <div class="f"><label for="atrFrom">از تاریخ</label><input id="atrFrom" class="ltr" style="width:130px"></div>
+          <div class="f"><label for="atrTo">تا تاریخ</label><input id="atrTo" class="ltr" style="width:130px"></div>
+          <div class="f"><label for="atrShift">شیفت</label><select id="atrShift" style="width:110px"></select></div>
+          <div class="f"><label for="atrSt">ایستگاه</label><select id="atrSt" style="width:150px"></select></div>
+          <div class="f"><label for="atrWho">نام</label><select id="atrWho" data-search="1" style="width:180px"></select></div>
+          <label style="display:flex;gap:6px;align-items:center;margin-bottom:10px;cursor:pointer"><input type="checkbox" id="atrStop" style="width:auto"> نمایش توقف‌ها</label>
+          <button class="btn p" id="atrGo">نمایش</button>
+        </div>
+        <div id="atrOut"></div>
+      </div>
     </section>
     <section id="v-log" class="view" hidden>
       <div class="card">
@@ -523,7 +548,7 @@ const today=()=>jStr(new Date());
 const workDay=t=>{const d=String(t).slice(0,10),h=parseInt(String(t).slice(11,13),10);return h<6?addDays(d,-1):d;};
 // روز کاری هر ثبت: اگر برای روز کاری گذشته ثبت شده (برگه‌ی جامانده)، همان روز؛ وگرنه از زمان ثبت (۶ صبح تا ۶ صبح)
 const recDay=r=>r.wd||workDay(r.t);
-const SERVER_VER="1405.09.07-d";   // نسخه‌ی کد سرور (Code.gs)
+const SERVER_VER="1405.09.07-e";   // نسخه‌ی کد سرور (Code.gs)
 const prodDay=()=>{const n=new Date();if(n.getHours()<6)n.setDate(n.getDate()-1);return jStr(n);};
 const nowJ=()=>{const n=new Date();return`${today()} ${p2(n.getHours())}:${p2(n.getMinutes())}`;};
 function addDays(j,n){const[y,m,d]=j.split("/").map(Number);const[gy,gm,gd]=j2g(y,m,d);const dt=new Date(gy,gm-1,gd);dt.setDate(dt.getDate()+n);return jStr(dt);}
@@ -823,8 +848,28 @@ const H={
     if(pv&&at<pv.at)return err(`ساعت باید بعد از رویداد قبلی (${pv.at.slice(11)}) باشد.`);if(nx&&at>nx.at)return err(`ساعت باید قبل از رویداد بعدی (${nx.at.slice(11)}) باشد.`);
     const old=e.at;if(old===at)return ok({});DB.att[DB.att.indexOf(e)]=Object.assign({},e,{at});   // شیء تازه تا ذخیره‌ی برگه تغییر را ببیند
     logEv(u.name,"اصلاح ساعت کار",`${e.name} · ${ATT_T[e.type]}${e.station?" · "+e.station:""} · ${old.slice(11)} ← ${at.slice(11)} · ثبت اصلی: ${e.by}`);save();return ok({});});},
-  attReport(d){return needP("report",u=>{let f=normDate(d.from)||prodDay(),t=normDate(d.to)||f;if(f>t)[f,t]=[t,f];const who=String(d.who||"").trim(),now=nowJ(),pd=prodDay();
-    const by={};DB.att.forEach(e=>{if(e.day<f||e.day>t||(who&&e.name!==who))return;(by[e.name+"|"+e.day]=by[e.name+"|"+e.day]||[]).push(e);});
+  // ثبت یک‌جای چند ایستگاه یک نفر در یک شیفت (برای وقتی که لحظه‌ای ثبت نشده): هر ردیف = ایستگاه + از ساعت + تا ساعت
+  attSegs(d){return needP("entry",u=>{const n=String(d.name||"").trim(),o=DB.users.find(x=>x.name===n&&active(x));if(!o)return err("نفر را انتخاب کنید.");
+    const pd=prodDay(),day=normDate(d.day)||pd,mg=isMgr(u);if(day>pd)return err("روز آینده را نمی‌شود ثبت کرد.");if(day<addDays(pd,mg?-7:-1))return err(mg?"فقط تا ۷ روز کاری قبل.":"فقط امروز و دیروز (روز کاری).");
+    const S=(Array.isArray(d.segs)?d.segs:[]).filter(x=>x&&(x.station||x.from||x.to));if(!S.length)return err("حداقل یک ایستگاه وارد کنید.");
+    const T=v=>{const m=String(v||"").trim().match(/^(\d{1,2}):(\d{2})$/);if(!m||+m[1]>23||+m[2]>59)return null;return(+m[1]<6?addDays(day,1):day)+" "+p2(+m[1])+":"+m[2];};   // قبل از ساعت ۶ یعنی بامداد همان روز کاری
+    const now=nowJ(),stl=attStations(),L=[];
+    for(let i=0;i<S.length;i++){const x=S[i],k=`ردیف ${i+1}: `,last=i===S.length-1,st=String(x.station||"").trim();if(!stl.includes(st))return err(k+"ایستگاه را انتخاب کنید.");
+      const f=T(x.from);if(!f)return err(k+"ساعت شروع را درست وارد کنید (مثل ۰۶:۰۰).");let t=null;
+      if(String(x.to||"").trim()){t=T(x.to);if(!t)return err(k+"ساعت پایان را درست وارد کنید.");if(t<=f)return err(k+"ساعت پایان باید بعد از شروع باشد.");}
+      else if(!last||day!==pd)return err(k+"ساعت پایان را وارد کنید."+(last?" (فقط برای امروز می‌شود پایانِ ردیف آخر را خالی گذاشت، یعنی هنوز سر کار است)":""));
+      if(f>now||(t&&t>now))return err(k+"ساعت نمی‌تواند بعد از الان باشد.");
+      if(L.length){const pv=L[L.length-1];if(f<pv.to)return err(k+`با ردیف قبل (تا ${pv.to.slice(11)}) هم‌پوشانی دارد.`);if(f===pv.to&&st===pv.station)return err(k+"همان ایستگاه ردیف قبل است؛ دو ردیف را یکی کنید.");}
+      L.push({station:st,from:f,to:t});}
+    const ev=ATTL().filter(e=>e.day===day&&e.name===n).sort(attSort);
+    if(ev.length){const s0=attSummary(ev,null),la=ev[ev.length-1].at;if(s0.state!=="ended"||la>L[0].from)return err(`برای ${n} در این روز قبلاً ساعت کار ثبت شده (${ATT_SN[s0.state]}${s0.since?" از "+s0.since.slice(11):""})؛ اول با «↶ برگشت» آن را بردارید${s0.state==="ended"?" یا ردیف‌ها را بعد از "+la.slice(11)+" بگذارید":""}.`);}
+    let id=ATTL().reduce((m,e)=>Math.max(m,+e.id||0),0);const add=(type,at,station,reason)=>{DB.att.push({oid:newOid(),id:++id,t:now,at,day,shift:o.shift||"",name:n,type,station:station||"",reason:reason||"",by:u.name});};
+    L.forEach((x,i)=>{if(!i)return add("start",x.from,x.station);const pv=L[i-1];if(x.from>pv.to)add("stop",pv.to,pv.station,"بین دو ایستگاه");add("move",x.from,x.station);});
+    const z=L[L.length-1];if(z.to)add("end",z.to);
+    logEv(u.name,"ثبت چند ایستگاه",`${n} · روز ${day} · `+L.map(x=>`${x.station} ${x.from.slice(11)}–${x.to?x.to.slice(11):"…"}`).join("، "));save();return ok({n:L.length});});},
+  // گزارش ساعت کار: هم در تب گزارش (دسترسی گزارش) و هم پایین تب ساعت کار (دسترسی ثبت)
+  attReport(d){const u0=me();return needP(u0&&permsOf(u0).includes("entry")?"entry":"report",u=>{let f=normDate(d.from)||prodDay(),t=normDate(d.to)||f;if(f>t)[f,t]=[t,f];const who=String(d.who||"").trim(),now=nowJ(),pd=prodDay();
+    const by={};ATTL().forEach(e=>{if(e.day<f||e.day>t||(who&&e.name!==who))return;(by[e.name+"|"+e.day]=by[e.name+"|"+e.day]||[]).push(e);});
     const A=actualsS(f,t,"",null,"reg");const out=Object.entries(by).map(([k,ev])=>{const[name,day]=k.split("|");ev.sort(attSort);const s=attSummary(ev,day===pd?now:null);
       const prod={};Object.values(A).forEach(a=>{if(a.name===name&&a.date===day){prod[a.station]=(prod[a.station]||0)+a.pcs;}});
       return{name,day,shift:ev[0].shift,segs:s.segs,work:s.work,stop:s.stop,byStation:s.byStation,byReason:s.byReason,leave:s.leave,state:s.state,prod};}).sort((a,b)=>a.day<b.day?1:a.day>b.day?-1:a.name.localeCompare(b.name,"fa"));
@@ -1066,10 +1111,10 @@ const BAKED_AT=Backend.bakedAt,BAKED_ME=Backend.me;
 const $=s=>document.querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fa=n=>Number(n||0).toLocaleString("fa-IR");
-let META=null,ME=null;const CLIENT_VER="1405.09.07-d";   // نسخه‌ی صفحه (Index.html)
+let META=null,ME=null;const CLIENT_VER="1405.09.07-e";   // نسخه‌ی صفحه (Index.html)
 // اگر Code.gs و Index.html هم‌نسخه نباشند (یکی جایگزین نشده)، هشدار بده
 function verCheck(){const b=$("#verWarn");if(!b||!META)return;const sv=META.ver||"قدیمی";b.hidden=sv===CLIENT_VER;b.innerHTML=`نسخه‌ی Code.gs (<b class="mono">${esc(sv)}</b>) با Index.html (<b class="mono">${CLIENT_VER}</b>) یکی نیست؛ هر دو فایل را کامل جایگزین کنید و New version بزنید.`;$("#verTag").textContent="نسخه "+CLIENT_VER;}
-async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}if(r.ok&&/^(attEvent|attDel|addRework|delRework)$/.test(fn))offRefresh();return r;}
+async function api(fn,data){const r=await Backend.run(fn,data);if(r.code===401&&ME){ME=null;showLogin();}if(r.ok&&/^(attEvent|attDel|attSegs|addRework|delRework)$/.test(fn))offRefresh();return r;}
 function msg(el,text,kind){$(el).innerHTML=text?`<div class="msg ${kind||"ok"}">${text}</div>`:"";}
 const isAdmin=()=>ME&&["آمار","مدیر"].includes(ME.role);
 
@@ -1176,7 +1221,7 @@ document.addEventListener("mousedown",e=>{if(!JC)return;if(JC.el.contains(e.targ
     else if(b.dataset.jm){let{y,m}=JC;m+=+b.dataset.jm;if(m<1){m=12;y--;}if(m>12){m=1;y++;}JC.y=y;JC.m=m;jDraw();}return;}if(e.target!==JC.inp)jClose();});
 document.addEventListener("keydown",e=>{if(JC&&e.key==="Escape"){jClose();}});
 addEventListener("resize",jPlace);addEventListener("scroll",jPlace,true);
-const JIDS=["rsFrom","rsTo","qcFrom","qcTo","a_date","t_date","c_date","j_date","w_date","x_date","rw_fday","recDate","gDate","rFrom","rTo","mFrom","mTo","lgFrom","lgTo"];
+const JIDS=["rsFrom","rsTo","qcFrom","qcTo","a_date","t_date","c_date","j_date","w_date","x_date","rw_fday","recDate","gDate","rFrom","rTo","mFrom","mTo","lgFrom","lgTo","atrFrom","atrTo"];
 if(document.getElementById("gDate"))document.getElementById("gDate").dataset.future="1";   // تارگت فردا را هم می‌شود از قبل زد
 JIDS.forEach(id=>{const i=document.getElementById(id);if(!i)return;i.classList.add("jdate");i.setAttribute("autocomplete","off");i.addEventListener("focus",()=>jOpen(i));i.addEventListener("click",()=>jOpen(i));
   i.addEventListener("input",()=>{if(JC&&JC.inp===i){const p=jparse(i.value);if(p&&(p[0]!==JC.y||p[1]!==JC.m)){JC.y=p[0];JC.m=p[1];}jDraw();}});i.addEventListener("blur",()=>setTimeout(()=>{if(JC&&JC.inp===i&&document.activeElement!==i)jClose();},150));});
@@ -1361,7 +1406,8 @@ async function initAtt(){const r=await api("attBoard",{});if(!r.ok)return msg("#
   const k=$("#atShift").value;$("#atShift").innerHTML=`<option value="">همه</option>`+r.shifts.map(s=>`<option>${esc(s)}</option>`).join("");$("#atShift").value=k;
   {const k=$("#atSt").value,PD=Object.fromEntries((r.pos||[]).map(p=>[p.name,p.desc]));const prodSt=r.stations.filter(s=>!(s in PD));
    $("#atSt").innerHTML=`<option value="">انتخاب کنید</option><optgroup label="ایستگاه‌های تولید">${prodSt.map(s=>`<option>${esc(s)}</option>`).join("")}</optgroup>${(r.pos||[]).length?`<optgroup label="پوزیشن‌های دیگر">${r.pos.map(p=>`<option title="${esc(p.desc||"")}">${esc(p.name)}</option>`).join("")}</optgroup>`:""}`;$("#atSt").value=k;atPos();}
-  if(!$("#atRs").options.length)$("#atRs").innerHTML=`<option value="">انتخاب کنید</option>`+r.reasons.map(s=>`<option>${esc(s)}</option>`).join("");atDraw();}
+  if(!$("#atRs").options.length)$("#atRs").innerHTML=`<option value="">انتخاب کنید</option>`+r.reasons.map(s=>`<option>${esc(s)}</option>`).join("");atDraw();
+  amInit();const first=!$("#atrFrom").value;atrInit();if(first)atrRun();}
 const ATCLS={none:"",work:"p-ok",stop:"p-warn",ended:"",leave:"p-bad"};
 function atDraw(){if(!ATB)return;const sh=$("#atShift").value,q=normFa($("#atQ").value);const L=ATB.rows.filter(x=>(!sh||x.shift===sh)&&(!q||normFa(x.name).includes(q)));
   const cnt=s=>ATB.rows.filter(x=>(!sh||x.shift===sh)&&x.state===s).length;
@@ -1374,12 +1420,50 @@ function atDraw(){if(!ATB)return;const sh=$("#atShift").value,q=normFa($("#atQ")
     ${ATOPEN===x.name?`<tr class="atHist"><td colspan="7">${x.events.length?x.events.map(e=>`<span class="atEv">${esc(hm(e.at))} · ${esc(({start:"شروع",move:"جابه‌جایی",stop:"توقف",resume:"ادامه",end:"پایان",leave:"مرخصی"})[e.type])}${e.station?" · "+esc(e.station):""}${e.reason?" · "+esc(e.reason):""} <span class="hint">(${esc(e.by)})</span> ${ATEDIT===e.id?`<input type="time" class="atEdT" value="${esc(hm(e.at))}" style="width:auto;padding:2px 6px"> <button class="btn sm p" data-atsave="${e.id}">ذخیره</button> <button class="lnk" data-atedit="0">انصراف</button>`:`<button class="lnk" data-atedit="${e.id}">✎ اصلاح ساعت</button> <button class="lnk" data-atdel="${e.id}">حذف</button>`}</span>`).join(""):'<span class="hint">رویدادی ثبت نشده.</span>'}</td></tr>`:""}`;}).join("")}</tbody></table></div>`;
   $("#atBulk").hidden=!ATSEL.size;$("#atSelN").textContent=fa(ATSEL.size);}
 let ATEDIT=0;
+/* ---- ثبت چند ایستگاه در یک شیفت ---- */
+function amStOpts(v){const PD=new Set(((ATB&&ATB.pos)||[]).map(p=>p.name));const st=(ATB&&ATB.stations)||[];
+  return`<option value="">انتخاب کنید</option><optgroup label="ایستگاه‌های تولید">${st.filter(x=>!PD.has(x)).map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</optgroup>${PD.size?`<optgroup label="پوزیشن‌های دیگر">${[...PD].map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</optgroup>`:""}`;}
+function amRowAdd(from){const tb=$("#amRows");const tr=document.createElement("tr");tr.innerHTML=`<td class="n amI"></td><td><select class="amS" style="width:170px">${amStOpts("")}</select></td><td><input type="time" class="amF ltr" style="width:115px" value="${esc(from||"")}"></td><td><input type="time" class="amT2 ltr" style="width:115px"></td><td><button class="lnk amX" title="حذف ردیف">✕</button></td>`;tb.appendChild(tr);amNum();}
+function amNum(){$$("#amRows tr").forEach((tr,i)=>{tr.querySelector(".amI").textContent=fa(i+1);});}
+function amInit(){if(!ATB)return;const k=$("#amN").value;const by={};ATB.rows.forEach(x=>(by[x.shift||"—"]=by[x.shift||"—"]||[]).push(x.name));
+  $("#amN").innerHTML=`<option value="">انتخاب کنید</option>`+Object.entries(by).map(([sh,L])=>`<optgroup label="شیفت ${esc(sh)}">${L.map(n=>`<option>${esc(n)}</option>`).join("")}</optgroup>`).join("");$("#amN").value=k;
+  const days=(META.wdDays||[META.prodDay]).slice(0,2),kd=$("#amD").value;$("#amD").innerHTML=days.map((d,i)=>`<option value="${esc(d)}">${["امروز","دیروز"][i]} · ${esc(d)}</option>`).join("");if(kd&&days.includes(kd))$("#amD").value=kd;
+  if(!$("#amRows").children.length)amRowAdd("");}
+$("#amN").addEventListener("change",()=>{const r=ATB&&ATB.rows.find(x=>x.name===$("#amN").value);const f=$("#amRows .amF");if(r&&f&&!f.value&&ATB.shiftStart&&ATB.shiftStart[r.shift])f.value=ATB.shiftStart[r.shift];});
+$("#amAdd").addEventListener("click",()=>{const L=$$("#amRows .amT2");amRowAdd(L.length?L[L.length-1].value:"");});
+$("#amRows").addEventListener("click",e=>{const x=e.target.closest(".amX");if(!x)return;if($$("#amRows tr").length>1)x.closest("tr").remove();else x.closest("tr").querySelectorAll("input").forEach(i=>i.value="");amNum();});
+$("#amGo").addEventListener("click",async()=>{const segs=$$("#amRows tr").map(tr=>({station:tr.querySelector(".amS").value,from:tr.querySelector(".amF").value,to:tr.querySelector(".amT2").value}));
+  const name=$("#amN").value;if(!name)return msg("#amMsg","نام را انتخاب کنید.","warn");const r=await api("attSegs",{name,day:$("#amD").value,segs});if(!r.ok)return msg("#amMsg",esc(r.error),"bad");
+  msg("#amMsg",`ثبت شد: ${esc(name)} · ${fa(r.n)} ایستگاه.`,"ok");$("#amRows").innerHTML="";amRowAdd("");$("#amN").value="";if(typeof comboSync==="function")comboSync($("#amN"));initAtt();atrRun();});
+/* ---- گزارش ساعت کار (پایین همین تب) ---- */
+function atrInit(){if(!ATB)return;if(!$("#atrFrom").value)$("#atrFrom").value=ATB.day;if(!$("#atrTo").value)$("#atrTo").value=ATB.day;
+  const keep=(id,html)=>{const k=$(id).value;$(id).innerHTML=html;$(id).value=k;};
+  keep("#atrShift",`<option value="">همه</option>`+ATB.shifts.map(s=>`<option>${esc(s)}</option>`).join(""));
+  keep("#atrSt",`<option value="">همه</option>`+ATB.stations.map(s=>`<option>${esc(s)}</option>`).join(""));
+  keep("#atrWho",`<option value="">همه</option>`+ATB.rows.map(x=>x.name).sort((a,b)=>a.localeCompare(b,"fa")).map(n=>`<option>${esc(n)}</option>`).join(""));}
+async function atrRun(){const o=$("#atrOut");o.innerHTML='<p class="hint">در حال خواندن…</p>';const r=await api("attReport",{from:$("#atrFrom").value,to:$("#atrTo").value,who:$("#atrWho").value});if(!r.ok)return msg("#atrOut",esc(r.error),"bad");
+  const shF=$("#atrShift").value,stF=$("#atrSt").value,stop=$("#atrStop").checked,SO=(ATB&&ATB.shifts)||[];const L=[];
+  r.rows.forEach(x=>{if(shF&&x.shift!==shF)return;x.segs.forEach(s=>{if(s.kind!=="work"&&!stop)return;if(stF&&s.station!==stF)return;L.push({day:x.day,shift:x.shift||"—",name:x.name,kind:s.kind,station:s.station||"",reason:s.reason||"",from:s.from,to:s.to,open:s.open,min:s.min||0});});});
+  if(!L.length){o.innerHTML=`<div class="msg ok" style="margin-top:12px">از ${esc(r.from)} تا ${esc(r.to)} با این فیلترها ساعت کاری ثبت نشده است.</div>`;return;}
+  const si=s=>{const i=SO.indexOf(s);return i<0?99:i;};L.sort((a,b)=>a.day<b.day?1:a.day>b.day?-1:si(a.shift)-si(b.shift)||a.name.localeCompare(b.name,"fa")||(a.from<b.from?-1:1));
+  const G={};L.filter(x=>x.kind==="work").forEach(x=>{const k=x.shift+"|"+x.station,g=G[k]||(G[k]={shift:x.shift,station:x.station,ppl:new Set(),min:0});g.ppl.add(x.name);g.min+=x.min;});
+  const multi={};L.filter(x=>x.kind==="work").forEach(x=>{const k=x.day+"|"+x.name;(multi[k]=multi[k]||new Set()).add(x.station);});
+  let prev="";
+  o.innerHTML=`<h3 style="margin-top:14px">خلاصه: هر شیفت در هر ایستگاه</h3>
+  <div class="tw"><table><thead><tr><th>شیفت</th><th>ایستگاه</th><th class="n">تعداد نفر</th><th class="n">جمع ساعت کار</th><th>نفرات</th></tr></thead><tbody>
+  ${Object.values(G).sort((a,b)=>si(a.shift)-si(b.shift)||b.min-a.min).map(g=>`<tr><td>${esc(g.shift)}</td><td><b>${esc(g.station)}</b></td><td class="n">${fa(g.ppl.size)}</td><td class="n">${dur(g.min)}</td><td style="white-space:normal">${[...g.ppl].map(esc).join("، ")}</td></tr>`).join("")}</tbody></table></div>
+  <h3 style="margin-top:14px">جزئیات: هر نفر از چه ساعتی تا چه ساعتی در کدام ایستگاه</h3>
+  <div class="tw"><table class="atrT"><thead><tr><th>روز</th><th>شیفت</th><th>نام</th><th>ایستگاه</th><th>از</th><th>تا</th><th class="n">مدت</th></tr></thead><tbody>
+  ${L.map(x=>{const k=x.day+"|"+x.name,first=k!==prev;prev=k;const m=multi[k]&&multi[k].size>1;
+    return`<tr class="${first?"atrFirst":""}"><td class="mono">${first?esc(x.day):""}</td><td>${first?esc(x.shift):""}</td><td>${first?`<b>${esc(x.name)}</b>${m?` <span class="pill p-warn" title="در این شیفت در چند ایستگاه کار کرده">${fa(multi[k].size)} ایستگاه</span>`:""}`:""}</td>
+    <td>${x.kind==="work"?esc(x.station):`<span class="hint">⏸ توقف: ${esc(x.reason)}</span>`}</td><td class="mono">${esc(hm(x.from))}</td><td class="mono">${x.open?'<span class="hint">ادامه دارد</span>':esc(hm(x.to))}</td><td class="n">${x.min?dur(x.min):"—"}</td></tr>`;}).join("")}</tbody></table></div>`;}
+$("#atrGo").addEventListener("click",atrRun);["#atrShift","#atrSt","#atrStop"].forEach(id=>$(id).addEventListener("change",atrRun));
 function atPos(){const p=((ATB&&ATB.pos)||[]).find(x=>x.name===$("#atSt").value);$("#atPosDesc").innerHTML=p?`<b>${esc(p.name)}:</b> ${esc(p.desc||"")}`:"";}
 $("#atSt").addEventListener("change",atPos);
 async function atSend(names,type){const d={names,type,station:$("#atSt").value,reason:type==="leave"?"مرخصی روزانه":$("#atRs").value,time:$("#atTime").value.trim()};
   if((type==="start"||type==="move")&&!d.station)return msg("#atMsg","اول «ایستگاه» را بالای جدول انتخاب کنید.","warn");if(type==="stop"&&!d.reason)return msg("#atMsg","اول «علت توقف» را بالای جدول انتخاب کنید.","warn");
   const r=await api("attEvent",d);if(!r.ok)return msg("#atMsg",esc(r.error),"bad");
-  msg("#atMsg",`${r.done.length?`ثبت شد (${fa(r.done.length)} نفر · ${r.fromShift?"ساعت شروع شیفت هر نفر (اگر اولین شروع امروزش بود)":"ساعت "+esc(hm(r.at))}).`:""}${r.bad.length?`<br>ثبت نشد: ${r.bad.map(esc).join(" · ")}`:""}`,r.bad.length?"warn":"ok");if(r.done.length){$("#atTime").value="";ATSEL.clear();}initAtt();}
+  msg("#atMsg",`${r.done.length?`ثبت شد (${fa(r.done.length)} نفر · ${r.fromShift?"ساعت شروع شیفت هر نفر (اگر اولین شروع امروزش بود)":"ساعت "+esc(hm(r.at))}).`:""}${r.bad.length?`<br>ثبت نشد: ${r.bad.map(esc).join(" · ")}`:""}`,r.bad.length?"warn":"ok");if(r.done.length){$("#atTime").value="";ATSEL.clear();}initAtt().then(()=>{if($("#atrOut").innerHTML)atrRun();});}
 $("#atOut").addEventListener("click",e=>{const tr=e.target.closest("tr[data-n]");const b=e.target.closest("[data-at]");if(b&&tr)return atSend([tr.dataset.n],b.dataset.at);
   if(e.target.closest("[data-ath]")&&tr){ATOPEN=ATOPEN===tr.dataset.n?"":tr.dataset.n;return atDraw();}
   const ed=e.target.closest("[data-atedit]");if(ed){ATEDIT=+ed.dataset.atedit;atDraw();const t=$("#atOut .atEdT");if(t)t.focus();return;}
